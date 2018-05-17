@@ -22,16 +22,18 @@ public class OptionsParserTest {
 
     @Test
     public void testBooleanKeyArg() {
-        Options options = OptionsParser.parse(new String[]{"-key"});
+        Options options = OptionsParser.parse(new String[]{"--key"});
         assertEquals("true", options.get("key", null));
     }
 
     @Test
     public void testUnparsedArgs() {
-        Options options = OptionsParser.parse(new String[]{"noprefix=value", "booltest"});
-        // Boolean unparsed arg
+        Options options = OptionsParser.parse(new String[]{"noprefix=value", "booltest", "-key"});
+        // Boolean unparsed arg without prefix
         assertEquals(null, options.get("booltest", null));
-        // NUll default value
+        // Boolean unparsed arg with wrong prefix
+        assertEquals(null, options.get("key", null));
+        // Null default value
         assertEquals(null, options.get("noprefix", null));
         // Any default value
         assertEquals("bar", options.get("foo", "bar"));

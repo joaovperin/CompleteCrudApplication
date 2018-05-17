@@ -13,7 +13,8 @@ import java.util.Arrays;
  */
 public class OptionsParser {
 
-    private static final String PREFIX = "-";
+    private static final String BOOLEAN_VALUE_PREFIX = "--";
+    private static final String KEY_VALUE_PREFIX = "-";
     private static final String SEPARATOR = "=";
 
     public static Options parse(String[] args) {
@@ -27,22 +28,32 @@ public class OptionsParser {
     }
 
     private static boolean isValidArgument(String arg) {
-        if (arg == null || arg.indexOf(PREFIX) != 0) {
+        if (arg == null) {
             return false;
         }
-        return (arg.contains(SEPARATOR) && arg.length() >= 4) || (!arg.contains(SEPARATOR));
+        // Checks if its a boolean argument
+        int indexOfBoolPrefix = arg.indexOf(BOOLEAN_VALUE_PREFIX);
+        if (indexOfBoolPrefix == 0 && !arg.contains(SEPARATOR)) {
+            return true;
+        }
+        // Checks if its a named key/value argument
+        int indexOfKeyValuePrefix = arg.indexOf(KEY_VALUE_PREFIX);
+        if (indexOfKeyValuePrefix == 0) {
+            return arg.contains(SEPARATOR) && arg.length() >= 4;
+        }
+        return false;
     }
 
     private static KeyValuePair parseCommandLineArg(String arg) {
         int idxOfSeparatorCharacter = arg.indexOf(SEPARATOR);
         // Boolean argument is set to true if present
         if (idxOfSeparatorCharacter == -1) {
-            String key = arg.substring(1, arg.length());
+            String key = arg.substring(BOOLEAN_VALUE_PREFIX.length(), arg.length());
             return new KeyValuePair(key, String.valueOf(Boolean.TRUE.booleanValue()));
         }
         // Default Key/Value pair
-        String key = arg.substring(1, idxOfSeparatorCharacter);
-        String value = arg.substring(idxOfSeparatorCharacter + 1, arg.length());
+        String key = arg.substring(KEY_VALUE_PREFIX.length(), idxOfSeparatorCharacter);
+        String value = arg.substring(idxOfSeparatorCharacter + KEY_VALUE_PREFIX.length(), arg.length());
         return new KeyValuePair(key, value);
     }
 
