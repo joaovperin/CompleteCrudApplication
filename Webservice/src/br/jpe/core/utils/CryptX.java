@@ -15,7 +15,7 @@ import br.jpe.core.encrypt.Rot13;
  *
  * @author joaovperin
  */
-public final class CryptUtils {
+public final class CryptX {
 
     /**
      * Returns a new Rot13 cryptography class

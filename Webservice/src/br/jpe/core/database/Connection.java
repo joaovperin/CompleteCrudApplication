@@ -13,7 +13,7 @@ import java.sql.Statement;
  *
  * @author joaovperin
  */
-public interface Conexao extends AutoCloseable {
+public interface Connection extends AutoCloseable {
 
     /**
      * Creates a new SQL Statement

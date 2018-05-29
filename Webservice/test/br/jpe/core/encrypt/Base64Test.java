@@ -5,7 +5,7 @@
  */
 package br.jpe.core.encrypt;
 
-import br.jpe.core.utils.CryptUtils;
+import br.jpe.core.utils.CryptX;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
 public class Base64Test {
 
     /** Encriptor instance */
-    private final Criptography instance = CryptUtils.base64();
+    private final Criptography instance = CryptX.base64();
 
     /**
      * Test of encrypt method, of class Base64.

@@ -10,7 +10,7 @@ package br.jpe.core.database;
  *
  * @author joaovperin
  */
-public interface ConexaoPool extends Conexao {
+public interface PoolConnection extends Connection {
 
     /**
      * Returns true if the connection is free to be used

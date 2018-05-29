@@ -5,7 +5,7 @@
  */
 package br.jpe.core.dao;
 
-import br.jpe.core.database.Conexao;
+import br.jpe.core.utils.TextX;
 import br.jpe.core.database.DBException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import br.jpe.core.database.Connection;
 
 /**
  * A Generic Data Access Object
@@ -26,7 +27,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     /** Bean Class */
     private final Class<?> beanClass;
     /** Connection to the database */
-    protected final Conexao conn;
+    protected final Connection conn;
 
     /**
      * Constructor that receives the connection
@@ -34,7 +35,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @param conn
      * @param beanClass
      */
-    public GenericDAO(Conexao conn, Class<?> beanClass) {
+    public GenericDAO(Connection conn, Class<?> beanClass) {
         this.beanClass = beanClass;
         this.conn = Objects.requireNonNull(conn, "A valid connection is needed.");
     }
@@ -91,7 +92,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     public Method getSetter(Field field) throws ReflectiveOperationException {
         try {
-            return beanClass.getMethod("set" + capitalize(field.getName()), field.getType());
+            return beanClass.getMethod("set" + TextX.capitalize(field.getName()), field.getType());
         } catch (NoSuchMethodException | SecurityException ex) {
             throw new ReflectiveOperationException(ex);
         }
@@ -106,20 +107,10 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     public Method getGetterFromRs(Field field) throws ReflectiveOperationException {
         try {
-            return ResultSet.class.getMethod("get" + capitalize(field.getType().getSimpleName()), int.class);
+            return ResultSet.class.getMethod("get" + TextX.capitalize(field.getType().getSimpleName()), int.class);
         } catch (NoSuchMethodException | SecurityException ex) {
             throw new ReflectiveOperationException(ex);
         }
-    }
-
-    /**
-     * Capitalizes a field
-     *
-     * @param input
-     * @return String
-     */
-    private String capitalize(String input) {
-        return input.substring(0, 1).toUpperCase().concat(input.substring(1, input.length()));
     }
 
     /**

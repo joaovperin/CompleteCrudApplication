@@ -22,7 +22,7 @@ public final class ConnectionPool {
     private static PoolProperties properties;
 
     /** List of pool connections */
-    private final List<ConexaoPool> conexoes;
+    private final List<PoolConnection> conexoes;
     /** Internal variable to store connection tries */
     private int tries = 0;
 
@@ -39,7 +39,7 @@ public final class ConnectionPool {
      * @param conn
      * @throws DBException
      */
-    public void addConnection(ConexaoPool conn) throws DBException {
+    public void addConnection(PoolConnection conn) throws DBException {
         if (conexoes.size() >= properties.getMaxConnections()) {
             throw new DBException("Pool is full!");
         }
@@ -52,9 +52,9 @@ public final class ConnectionPool {
      * @return ConexaoPool
      * @throws EmptyPoolException
      */
-    public ConexaoPool getConnection() throws EmptyPoolException {
+    public PoolConnection getConnection() throws EmptyPoolException {
         tries = 0;
-        ConexaoPool conn = getPoolConnection();
+        PoolConnection conn = getPoolConnection();
         return conn;
     }
 
@@ -64,13 +64,13 @@ public final class ConnectionPool {
      * @return ConexaoPool
      * @throws EmptyPoolException
      */
-    private ConexaoPool getPoolConnection() throws EmptyPoolException {
+    private PoolConnection getPoolConnection() throws EmptyPoolException {
         // Recursive protection for not entering in infinite loop
         if (++tries > properties.getMaxTries()) {
             throw new RuntimeException("Failed to create a new Connection after " + properties.getMaxTries() + " tries.");
         }
         // Try to get a free connection on the pool
-        Optional<ConexaoPool> opt = conexoes.stream().filter((c) -> c.isFree()).findFirst();
+        Optional<PoolConnection> opt = conexoes.stream().filter((c) -> c.isFree()).findFirst();
         if (opt.isPresent()) {
             return opt.get();
         }
@@ -115,7 +115,7 @@ public final class ConnectionPool {
      * Executed by the runtime on the finish of the application
      */
     private void onFinish() {
-        this.conexoes.forEach(ConexaoPool::jdbcClose);
+        this.conexoes.forEach(PoolConnection::jdbcClose);
     }
 
 }

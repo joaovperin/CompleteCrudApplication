@@ -11,11 +11,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * An implementation of a MySQL Connection
+ * An implementation of a Poolable Database Connection
  *
  * @author joaovperin
  */
-public class MySQLConnection implements ConexaoPool {
+public class DBConnection implements PoolConnection {
 
     /** JDBC wrapped connection object */
     private final Connection conn;
@@ -29,7 +29,7 @@ public class MySQLConnection implements ConexaoPool {
      *
      * @param conn
      */
-    public MySQLConnection(Connection conn) {
+    public DBConnection(Connection conn) {
         this(conn, true);
     }
 
@@ -37,8 +37,9 @@ public class MySQLConnection implements ConexaoPool {
      * Constructor that receives the connection and read-only/transaction mode
      *
      * @param conn
+     * @param readOnly
      */
-    public MySQLConnection(Connection conn, boolean readOnly) {
+    public DBConnection(Connection conn, boolean readOnly) {
         this.conn = conn;
         this.readOnly = readOnly;
         this.free = true;
@@ -114,8 +115,6 @@ public class MySQLConnection implements ConexaoPool {
 
     /**
      * Rollbacks the transaction
-     *
-     * @throws DBException
      */
     @Override
     public void rollback() {

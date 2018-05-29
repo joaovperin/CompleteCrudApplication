@@ -8,18 +8,28 @@ package br.jpe.core;
 import java.util.Arrays;
 
 /**
+ * A parser for parsing command line parameters into options
  *
- * @author programacao
+ * @author joaovperin
  */
 public class OptionsParser {
 
+    /** Prefix for boolean parameters */
     private static final String BOOLEAN_VALUE_PREFIX = "--";
+    /** Prefix for Key/Value parameters */
     private static final String KEY_VALUE_PREFIX = "-";
+    /** Separator for Key/Value parameters */
     private static final String SEPARATOR = "=";
 
-    public static Options parse(String[] args) {
+    /**
+     * Parsers a String array into an Options object
+     *
+     * @param commandLineArgs
+     * @return Options
+     */
+    public static Options parse(String[] commandLineArgs) {
         Options options = new Options();
-        Arrays.asList(args).stream().filter((str) -> {
+        Arrays.asList(commandLineArgs).stream().filter((str) -> {
             return isValidArgument(str);
         }).map((a) -> {
             return parseCommandLineArg(a);
@@ -27,8 +37,14 @@ public class OptionsParser {
         return options;
     }
 
+    /**
+     * Returns true if the argument is valid
+     *
+     * @param arg Command line argument
+     * @return boolean
+     */
     private static boolean isValidArgument(String arg) {
-        if (arg == null) {
+        if (arg == null || arg.trim().isEmpty()) {
             return false;
         }
         // Checks if its a boolean argument
@@ -44,6 +60,12 @@ public class OptionsParser {
         return false;
     }
 
+    /**
+     * Parses a valid command line arg into a Key/Value pair
+     *
+     * @param arg Command line argument
+     * @return KeyValuePair
+     */
     private static KeyValuePair parseCommandLineArg(String arg) {
         int idxOfSeparatorCharacter = arg.indexOf(SEPARATOR);
         // Boolean argument is set to true if present
@@ -57,8 +79,17 @@ public class OptionsParser {
         return new KeyValuePair(key, value);
     }
 
+    /**
+     * A Helper class to hold Key/Value pairs
+     */
     private static class KeyValuePair {
 
+        /**
+         * Constructor
+         *
+         * @param key
+         * @param value
+         */
         public KeyValuePair(String key, String value) {
             this.key = key;
             this.value = value;

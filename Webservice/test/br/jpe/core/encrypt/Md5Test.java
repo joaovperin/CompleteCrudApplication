@@ -5,7 +5,7 @@
  */
 package br.jpe.core.encrypt;
 
-import br.jpe.core.utils.CryptUtils;
+import br.jpe.core.utils.CryptX;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
 public class Md5Test {
 
     /** Encriptor instance */
-    private final Criptography instance = CryptUtils.md5();
+    private final Criptography instance = CryptX.md5();
 
     /**
      * Test of encrypt method, of class Md5.

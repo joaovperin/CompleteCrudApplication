@@ -10,18 +10,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Options object
  *
- * @author programacao
+ * @author joaovperin
  */
 public final class Options {
 
+    /** Map with the options */
     private final Map<String, String> options;
+    /** Character separator to print options */
     private static final String SEPARATOR = "=";
 
+    /**
+     * Default constructor
+     */
     public Options() {
         this.options = new HashMap<>();
     }
 
+    /**
+     * Puts an object in the options map (if not exists)
+     *
+     * @param key
+     * @param value
+     */
     public void put(String key, String value) {
         String entry = options.get(key);
         if (entry == null) {
@@ -29,6 +41,13 @@ public final class Options {
         }
     }
 
+    /**
+     * Returns an option from the map
+     *
+     * @param key
+     * @param defaultValue
+     * @return String
+     */
     public String get(String key, String defaultValue) {
         String value = options.get(key);
         if (value != null) {
@@ -40,9 +59,14 @@ public final class Options {
         return defaultValue;
     }
 
-    public final void printAll(PrintStream out) {
+    /**
+     * Prints all the options
+     *
+     * @param printStream
+     */
+    public final void printAll(PrintStream printStream) {
         options.entrySet().forEach((set) -> {
-            out.println(new StringBuilder().
+            printStream.println(new StringBuilder().
                     append(set.getKey()).
                     append(SEPARATOR).
                     append(set.getValue()).

@@ -5,9 +5,8 @@
  */
 package br.jpe.core.database;
 
-import br.jpe.core.utils.CryptUtils;
 import com.mysql.jdbc.AbandonedConnectionCleanupThread;
-import java.sql.Connection;
+import java.io.IOException;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -19,46 +18,47 @@ import java.util.Properties;
  *
  * @author joaovperin
  */
-public final class ConexaoFactory {
+public final class ConnectionFactory {
 
-    /** Url to the database */
-    private static final String URL = "jdbc:mysql://porto-zoca.cl6eed1myiqo.us-west-2.rds.amazonaws.com:3306/PortoZoca_Dev";
     /** Connection properties */
     private static final Properties CONN_PTS;
+    /** Database Connection */
+    private static final Properties APP_PTS;
 
     static {
         // Static constructor to load properties and register driver
+        APP_PTS = new Properties();
         CONN_PTS = new Properties();
         loadProperties();
         registerDriver();
         // Add's a shutdown hook to deregister the driver
-        Runtime.getRuntime().addShutdownHook(new Thread(ConexaoFactory::onFinish));
+        Runtime.getRuntime().addShutdownHook(new Thread(ConnectionFactory::onFinish));
     }
 
     /**
      * Prevents instantiation
      */
-    private ConexaoFactory() {
+    private ConnectionFactory() {
         throw new UnsupportedOperationException("Don't Instantiate that!");
     }
 
     /**
      * Returns a ReadOnly Connection
      *
-     * @return Conexao
-     * @throws br.portozoca.ws.database.DBException
+     * @return Connection
+     * @throws br.jpe.core.database.DBException
      */
-    public static Conexao query() throws DBException {
-        ConexaoPool conn = null;
+    public static Connection query() throws DBException {
+        PoolConnection conn = null;
         ConnectionPool pool = ConnectionPool.get();
         try {
             conn = pool.getConnection();
         } catch (EmptyPoolException ex) {
             try {
-                Connection jdbcConn = getJdbcConn();
+                java.sql.Connection jdbcConn = getJdbcConn();
                 jdbcConn.setAutoCommit(false);
                 jdbcConn.setReadOnly(true);
-                conn = new MySQLConnection(jdbcConn);
+                conn = new DBConnection(jdbcConn);
                 pool.addConnection(conn);
             } catch (SQLException e) {
                 throw new DBException("Failed to create a Read-Only Connection", e);
@@ -70,11 +70,11 @@ public final class ConexaoFactory {
     /**
      * Returns a Transaction Connection
      *
-     * @return Conexao
-     * @throws br.portozoca.ws.database.DBException
+     * @return Connection
+     * @throws br.jpe.core.database.DBException
      */
-    public static Conexao transaction() throws DBException {
-        Connection conn = null;
+    public static Connection transaction() throws DBException {
+        java.sql.Connection conn = null;
         try {
             conn = getJdbcConn();
             conn.setAutoCommit(false);
@@ -82,17 +82,17 @@ public final class ConexaoFactory {
         } catch (SQLException e) {
             throw new DBException("Failed to create a Transaction Connection", e);
         }
-        return new MySQLConnection(conn, false);
+        return new DBConnection(conn, false);
     }
 
     /**
      * Returns a JdbcConnection
      *
-     * @return Connection
+     * @return java.sql.Connection
      * @throws SQLException
      */
-    private static Connection getJdbcConn() throws SQLException {
-        return DriverManager.getConnection(URL, CONN_PTS);
+    private static java.sql.Connection getJdbcConn() throws SQLException {
+        return DriverManager.getConnection(APP_PTS.getProperty("db.connection"), CONN_PTS);
     }
 
     /**
@@ -102,9 +102,15 @@ public final class ConexaoFactory {
      * https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-configuration-properties.html
      */
     private static void loadProperties() {
+        try {
+            APP_PTS.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("app.properties"));
+        } catch (IOException e) {
+            throw new RuntimeException("Fail to load app properties! Please include it on app.properties file in the Resources folder.", e);
+        }
+        // Clear the database connection properties and reloads
         CONN_PTS.clear();
-        CONN_PTS.setProperty("user", "PortoZoca");
-        CONN_PTS.setProperty("password", CryptUtils.base64().decrypt("UG9ydG9ab2NhMTIzNA=="));
+        CONN_PTS.setProperty("user", APP_PTS.getProperty("db.username"));
+        CONN_PTS.setProperty("password", APP_PTS.getProperty("db.password"));
     }
 
     /**
@@ -112,7 +118,7 @@ public final class ConexaoFactory {
      */
     private static void registerDriver() {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName(APP_PTS.getProperty("db.driver"));
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Failed to register JDBC/Mysql Driver!", e);
         }
@@ -127,7 +133,7 @@ public final class ConexaoFactory {
         while (drivers.hasMoreElements()) {
             Driver d = drivers.nextElement();
             try {
-                if (d.acceptsURL(URL)) {
+                if (d.acceptsURL(APP_PTS.getProperty("db.connection"))) {
                     DriverManager.deregisterDriver(d);
                 }
             } catch (SQLException e) {

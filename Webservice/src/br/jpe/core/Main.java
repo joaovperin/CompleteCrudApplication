@@ -9,11 +9,17 @@ import br.jpe.core.server.Server;
 import br.jpe.core.server.ServerFactory;
 
 /**
+ * Main Entry point
  *
- * @author programacao
+ * @author joaovperin
  */
 public class Main {
 
+    /**
+     * Runs the app
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         Server server = new ServerFactory(args).create();
         server.configure();

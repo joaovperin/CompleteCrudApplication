@@ -27,7 +27,7 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void getConnection() throws DBException, SQLException {
-        ResultSet rs = ConexaoFactory.query().createStmt().executeQuery("SELECT '1' FROM DUAL;");
+        ResultSet rs = ConnectionFactory.query().createStmt().executeQuery("SELECT '1' FROM DUAL;");
         String res = null;
         if (rs.next()) {
             res = rs.getString(1);
@@ -45,7 +45,7 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void showTables() throws Exception {
-        ResultSet rs = ConexaoFactory.query().createStmt().executeQuery("Show Tables;");
+        ResultSet rs = ConnectionFactory.query().createStmt().executeQuery("Show Tables;");
         List<String> tables = new ArrayList<>();
         while (rs.next()) {
             tables.add(rs.getString(1));
@@ -65,11 +65,11 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void poolReprovectionTest() throws DBException, SQLException {
-        ConexaoPool c1 = (ConexaoPool) ConexaoFactory.query();
+        PoolConnection c1 = (PoolConnection) ConnectionFactory.query();
         c1.createStmt();
         c1.free();
 
-        Conexao c2 = ConexaoFactory.query();
+        Connection c2 = ConnectionFactory.query();
         c2.createStmt();
         // The same reference
         assertTrue(c1.equals(c2));
@@ -83,14 +83,14 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void poolCreationTest() throws DBException, SQLException {
-        Conexao c1 = ConexaoFactory.query();
+        Connection c1 = ConnectionFactory.query();
         c1.createStmt();
 
-        ConexaoPool c2 = (ConexaoPool) ConexaoFactory.query();
+        PoolConnection c2 = (PoolConnection) ConnectionFactory.query();
         c2.createStmt();
         c2.free();
 
-        ConexaoPool c3 = (ConexaoPool) ConexaoFactory.query();
+        PoolConnection c3 = (PoolConnection) ConnectionFactory.query();
         c3.createStmt();
         c3.free();
         // Ensures the pool not return an used connection
@@ -109,19 +109,19 @@ public class ConexaoFactoryTest {
         int e1 = 0;
         int e2 = 0;
         int e3 = 0;
-        try (Conexao c1 = ConexaoFactory.query()) {
+        try (Connection c1 = ConnectionFactory.query()) {
             ResultSet rs1 = c1.createStmt().executeQuery("SELECT '1' FROM DUAL;");
             if (rs1.next()) {
                 e1 = rs1.getInt(1);
             }
-            try (Conexao c2 = ConexaoFactory.query()) {
+            try (Connection c2 = ConnectionFactory.query()) {
                 ResultSet rs2 = c2.createStmt().executeQuery("SELECT '2' FROM DUAL;");
                 if (rs2.next()) {
                     e2 = rs2.getInt(1);
                 }
             }
         }
-        try (Conexao c3 = ConexaoFactory.query()) {
+        try (Connection c3 = ConnectionFactory.query()) {
             ResultSet rs3 = c3.createStmt().executeQuery("SELECT '3' FROM DUAL;");
             if (rs3.next()) {
                 e3 = rs3.getInt(1);
