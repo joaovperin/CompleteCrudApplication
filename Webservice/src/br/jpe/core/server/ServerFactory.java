@@ -9,26 +9,44 @@ import br.jpe.core.Options;
 import br.jpe.core.OptionsParser;
 
 /**
+ * A Factory to help with server instantiation
  *
- * @author programacao
+ * @author joaovperin
  */
 public final class ServerFactory {
 
+    /** Server options */
     private final Options options;
 
-    public ServerFactory(String[] args) {
-        this.options = OptionsParser.parse(getArgsOrDefaults(args));
+    /**
+     * Constructor that builds the options using command line arguments
+     *
+     * @param commandLineArgs
+     */
+    public ServerFactory(String[] commandLineArgs) {
+        this.options = OptionsParser.parse(getArgsOrDefaults(commandLineArgs));
     }
 
+    /**
+     * Creates a new Server
+     *
+     * @return Server
+     */
     public final Server create() {
         TomcatServer sv = new TomcatServer();
         sv.setOptions(options);
         return sv;
     }
 
-    public final String[] getArgsOrDefaults(String[] args) {
-        if ((args != null && args.length > 0)) {
-            return args;
+    /**
+     * Returns the args passed and provides default values for missing args
+     *
+     * @param commandLineArgs
+     * @return String[] Command line args
+     */
+    public final String[] getArgsOrDefaults(String[] commandLineArgs) {
+        if ((commandLineArgs != null && commandLineArgs.length > 0)) {
+            return commandLineArgs;
         }
         // Return defaults
         return new String[]{"-port=8085"};
