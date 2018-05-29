@@ -9,6 +9,7 @@ import br.jpe.core.database.Connection;
 import br.jpe.core.database.ConnectionFactory;
 import br.jpe.core.database.DBException;
 import java.sql.SQLException;
+import java.util.List;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
@@ -87,14 +88,14 @@ public class GenericDAOTest {
     }
 
     /**
-     * Tests the Insert method
+     * Tests the Update method
      *
      * @throws DBException
      */
     @org.junit.Test
     public void testUpdate() throws DBException {
-        Test obj = new Test();
         try (Connection conn = ConnectionFactory.transaction()) {
+            Test obj = new Test();
             obj.keyy = 1;
             obj.valuee = "new Name";
             new GenericDAO<>(conn, Test.class).update(obj);
@@ -106,6 +107,24 @@ public class GenericDAOTest {
             Test get = new GenericDAO<Test>(conn, Test.class).select().get(0);
             assertEquals(1, get.keyy);
             assertEquals("new Name", get.valuee);
+        }
+    }
+
+    /**
+     * Tests the Delete method
+     *
+     * @throws DBException
+     */
+    @org.junit.Test
+    public void testDelete() throws DBException {
+        try (Connection conn = ConnectionFactory.transaction()) {
+            Test obj = new Test();
+            obj.keyy = 1;
+            new GenericDAO<>(conn, Test.class).delete(obj);
+            conn.commit();
+            // Asserts it will return an object equal
+            List<Test> list = new GenericDAO<Test>(conn, Test.class).select();
+            assertTrue(list.isEmpty());
         }
     }
 

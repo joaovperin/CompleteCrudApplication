@@ -136,9 +136,30 @@ public class GenericDAO<B> implements DataAccessObject<B> {
         }
     }
 
+    /**
+     * DELETE a register on the database and returns true if it's deleted
+     *
+     * @param bean
+     * @return List
+     * @throws DBException
+     */
     @Override
     public boolean delete(B bean) throws DBException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try (PreparedStatement pstm = conn.prepareStmt(buildDeleteStmt())) {
+            Field[] fields = beanClass.getDeclaredFields();
+            try {
+                // Primary key
+                Object value = getGetter(fields[0]).invoke(bean);
+                pstm.setObject(1, value);
+            } catch (ReflectiveOperationException e) {
+                throw new DBException(e);
+            }
+            // Executes the update
+            int executeUpdate = pstm.executeUpdate();
+            return executeUpdate > 0;
+        } catch (DBException | SQLException e) {
+            throw new DBException(e);
+        }
     }
 
     /**
@@ -258,6 +279,23 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             }
         }
         // First field is the primary key
+        return sb.append(" WHERE ").
+                append(String.format(" %s ", fields[0].getName())).
+                append(" = ?").
+                toString();
+    }
+
+    /**
+     * Builds the Delete Statement
+     *
+     * @return String
+     */
+    public String buildDeleteStmt() {
+        StringBuilder sb = new StringBuilder(256).
+                append("DELETE FROM ").
+                append(beanClass.getSimpleName());
+        // First field is the primary key
+        Field[] fields = beanClass.getDeclaredFields();
         return sb.append(" WHERE ").
                 append(String.format(" %s ", fields[0].getName())).
                 append(" = ?").
