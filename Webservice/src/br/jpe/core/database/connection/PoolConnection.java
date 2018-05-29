@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core.database;
+package br.jpe.core.database.connection;
 
 /**
  * A class to represent a connection from the pool

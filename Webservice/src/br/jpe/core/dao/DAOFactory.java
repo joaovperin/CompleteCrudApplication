@@ -5,7 +5,7 @@
  */
 package br.jpe.core.dao;
 
-import br.jpe.core.database.Connection;
+import br.jpe.core.database.connection.Connection;
 
 /**
  * A Factory utility to create DAO Objects

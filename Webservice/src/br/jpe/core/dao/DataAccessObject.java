@@ -25,6 +25,15 @@ public interface DataAccessObject<B> {
     public List<B> select() throws DBException;
 
     /**
+     * Executes a SELECT statement on the database and returns a list of beans based on a filter
+     *
+     * @param filter
+     * @return List
+     * @throws DBException
+     */
+    public List<B> select(Filter filter) throws DBException;
+
+    /**
      * INSERT a register on the database and returns true if it works
      *
      * @param bean

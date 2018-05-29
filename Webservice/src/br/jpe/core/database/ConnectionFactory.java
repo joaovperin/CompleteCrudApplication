@@ -5,6 +5,9 @@
  */
 package br.jpe.core.database;
 
+import br.jpe.core.database.connection.Connection;
+import br.jpe.core.database.connection.DBConnection;
+import br.jpe.core.database.connection.PoolConnection;
 import com.mysql.jdbc.AbandonedConnectionCleanupThread;
 import java.io.IOException;
 import java.sql.Driver;

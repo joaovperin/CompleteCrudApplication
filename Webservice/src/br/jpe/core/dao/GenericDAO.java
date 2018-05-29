@@ -14,7 +14,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import br.jpe.core.database.Connection;
+import br.jpe.core.database.connection.Connection;
 import java.sql.PreparedStatement;
 
 /**
@@ -318,6 +318,11 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             }
         }
         return sb.toString();
+    }
+
+    @Override
+    public List<B> select(Filter filter) throws DBException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

@@ -5,6 +5,7 @@
  */
 package br.jpe.core.database;
 
+import br.jpe.core.database.connection.PoolConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
