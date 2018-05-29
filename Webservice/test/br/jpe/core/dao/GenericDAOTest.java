@@ -14,8 +14,9 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 
 /**
+ * GenericDAO Test class
  *
- * @author programacao
+ * @author joaovperin
  */
 public class GenericDAOTest {
 
@@ -31,9 +32,9 @@ public class GenericDAOTest {
             // Create table
             StringBuilder sb = new StringBuilder();
             sb.append("CREATE TABLE IF NOT EXISTS Test (");
-            sb.append("Chave int not null auto_increment, ");
-            sb.append("Valor varchar(255), ");
-            sb.append("PRIMARY KEY (Chave))");
+            sb.append("Keyy int not null auto_increment, ");
+            sb.append("Valuee varchar(255), ");
+            sb.append("PRIMARY KEY (Keyy))");
             cn.createStmt().executeUpdate(sb.toString());
             cn.commit();
         }
@@ -76,13 +77,36 @@ public class GenericDAOTest {
     public void testInsert() throws DBException {
         Test obj = new Test();
         try (Connection cn = ConnectionFactory.transaction()) {
-            obj.key = 0;
-            obj.value = "useless name here";
+            obj.keyy = 0;
+            obj.valuee = "useless name here";
             new GenericDAO<>(cn, Test.class).insert(obj);
             cn.commit();
         }
         // Asserts it will get the auto-incremented key
-        assertEquals(obj.key, 1);
+        assertEquals(1, obj.keyy);
+    }
+
+    /**
+     * Tests the Insert method
+     *
+     * @throws DBException
+     */
+    @org.junit.Test
+    public void testUpdate() throws DBException {
+        Test obj = new Test();
+        try (Connection conn = ConnectionFactory.transaction()) {
+            obj.keyy = 1;
+            obj.valuee = "new Name";
+            new GenericDAO<>(conn, Test.class).update(obj);
+            conn.commit();
+            // Asserts it's changed
+            assertEquals(1, obj.keyy);
+            assertEquals("new Name", obj.valuee);
+            // Asserts it will return an object equal
+            Test get = new GenericDAO<Test>(conn, Test.class).select().get(0);
+            assertEquals(1, get.keyy);
+            assertEquals("new Name", get.valuee);
+        }
     }
 
     /**
@@ -93,28 +117,28 @@ public class GenericDAOTest {
         public Test() {
         }
 
-        private int key;
-        private String value;
+        private int keyy;
+        private String valuee;
 
-        public int getKey() {
-            return key;
+        public int getKeyy() {
+            return keyy;
         }
 
-        public void setKey(int key) {
-            this.key = key;
+        public void setKeyy(int keyy) {
+            this.keyy = keyy;
         }
 
-        public String getValue() {
-            return value;
+        public String getValuee() {
+            return valuee;
         }
 
-        public void setValue(String value) {
-            this.value = value;
+        public void setValuee(String valuee) {
+            this.valuee = valuee;
         }
 
         @Override
         public String toString() {
-            return "Test{" + "chave=" + key + ", valor=" + value + '}';
+            return "Test{" + "chave=" + keyy + ", valor=" + valuee + '}';
         }
 
     }

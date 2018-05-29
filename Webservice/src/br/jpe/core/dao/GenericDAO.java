@@ -105,9 +105,35 @@ public class GenericDAO<B> implements DataAccessObject<B> {
         }
     }
 
+    /**
+     * UPDATE a register on the database and returns true if it's modified
+     *
+     * @param bean
+     * @return List
+     * @throws DBException
+     */
     @Override
     public boolean update(B bean) throws DBException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try (PreparedStatement pstm = conn.prepareStmt(buildUpdateStmt())) {
+            Field[] fields = beanClass.getDeclaredFields();
+            try {
+                int i = 1;
+                for (Field field : fields) {
+                    Object value = getGetter(field).invoke(bean);
+                    pstm.setObject(i++, value);
+                }
+                // Primary key
+                Object value = getGetter(fields[0]).invoke(bean);
+                pstm.setObject(i, value);
+            } catch (ReflectiveOperationException e) {
+                throw new DBException(e);
+            }
+            // Executes the update
+            int executeUpdate = pstm.executeUpdate();
+            return executeUpdate > 0;
+        } catch (DBException | SQLException e) {
+            throw new DBException(e);
+        }
     }
 
     @Override
@@ -191,7 +217,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     }
 
     /**
-     * Builds the Select Statement
+     * Builds the Insert Statement
      *
      * @return String
      */
@@ -210,6 +236,32 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             }
         }
         return sb.append(")").toString();
+    }
+
+    /**
+     * Builds the Update Statement
+     *
+     * @return String
+     */
+    public String buildUpdateStmt() {
+        StringBuilder sb = new StringBuilder(256).
+                append("UPDATE ").
+                append(beanClass.getSimpleName()).
+                append(" SET ");
+        // For all declared fields
+        Field[] fields = beanClass.getDeclaredFields();
+        for (int i = 0; i < fields.length; i++) {
+            Field f = fields[i];
+            sb.append(f.getName()).append(" = ?");
+            if (i < fields.length - 1) {
+                sb.append(", ");
+            }
+        }
+        // First field is the primary key
+        return sb.append(" WHERE ").
+                append(String.format(" %s ", fields[0].getName())).
+                append(" = ?").
+                toString();
     }
 
     /**
