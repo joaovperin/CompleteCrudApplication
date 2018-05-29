@@ -23,6 +23,8 @@ public class DBConnection implements PoolConnection {
     private final boolean readOnly;
     /** A flag to control if the connection is free to use */
     private boolean free;
+    /** A flag to control if the connection is already commited */
+    private boolean commited;
 
     /**
      * Constructor that receives the connection and default's to readonly
@@ -43,6 +45,7 @@ public class DBConnection implements PoolConnection {
         this.conn = conn;
         this.readOnly = readOnly;
         this.free = true;
+        this.commited = false;
     }
 
     /**
@@ -71,7 +74,7 @@ public class DBConnection implements PoolConnection {
     public PreparedStatement prepareStmt(String sql) throws DBException {
         try {
             this.free = false;
-            return conn.prepareStatement(sql);
+            return conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         } catch (SQLException ex) {
             throw new DBException(ex);
         }
@@ -108,6 +111,7 @@ public class DBConnection implements PoolConnection {
         }
         try {
             conn.commit();
+            commited = true;
         } catch (SQLException e) {
             throw new DBException("Failed to commit!", e);
         }
@@ -138,6 +142,11 @@ public class DBConnection implements PoolConnection {
         if (readOnly) {
             this.free = true;
             return;
+        }
+        // If it's a transaction connection and it hasn't been commited yet, 
+        //...call rollback, so we can use try-with-resources.
+        if (!commited) {
+            rollback();
         }
         jdbcClose();
     }
