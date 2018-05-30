@@ -5,6 +5,8 @@
  */
 package br.jpe.core.dao;
 
+import java.util.List;
+
 /**
  * An object that represents a filter for the database
  *
@@ -32,10 +34,17 @@ public interface Filter {
     public void add(String field, FilterCondition condition, String value);
 
     /**
-     * Build the filter into an SQL command
+     * Returns the filter itens list
      *
-     * @return String
+     * @return List
      */
-    public String build();
+    public List<FilterItem> get();
+
+    /**
+     * Returns true if the filter is empty
+     *
+     * @return boolean
+     */
+    public boolean isEmpty();
 
 }

@@ -31,7 +31,8 @@ public enum FilterCondition {
      *
      * @return String
      */
-    public String getSql() {
+    @Override
+    public String toString() {
         return sql;
     }
 

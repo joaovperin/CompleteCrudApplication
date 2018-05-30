@@ -5,6 +5,7 @@
  */
 package br.jpe.core.dao;
 
+import br.jpe.core.database.ConnectionFactory;
 import br.jpe.core.utils.TextX;
 import br.jpe.core.database.DBException;
 import java.lang.reflect.Field;
@@ -68,6 +69,84 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             throw new DBException(e);
         }
         return list;
+    }
+
+    /**
+     * Executes a SELECT statement on the database and returns a list of beans based on a filter
+     *
+     * @param filter
+     * @return List
+     * @throws DBException
+     */
+    @Override
+    public List<B> select(Filter filter) throws DBException {
+        List<B> list = new ArrayList<>();
+        try (PreparedStatement pstm = conn.prepareStmt(buildSelectStmt().concat(buildWhereStmt(filter)))) {
+            try (ResultSet rs = pstm.executeQuery()) {
+                // Iterates all results
+                while (rs.next()) {
+                    try {
+                        B bean = createBean();
+                        int i = 1;
+                        for (Field field : beanClass.getDeclaredFields()) {
+                            Object value = getGetterFromRs(field).invoke(rs, i++);
+                            getSetter(field).invoke(bean, value);
+                        }
+                        list.add(bean);
+                    } catch (ReflectiveOperationException e) {
+                        throw new DBException(e);
+                    }
+                }
+            }
+        } catch (DBException | SQLException e) {
+            throw new DBException(e);
+        }
+        return list;
+    }
+
+    public static void main(String[] args) throws DBException {
+        try (Connection conn = ConnectionFactory.query()) {
+            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
+            Filter filter = new FilterImpl();
+            filter.add("keyy", FilterCondition.EQUAL, "2");
+//            filter.add("value", FilterCondition.EQUAL, "3");
+            System.out.println(dao.buildSelectStmt().concat(dao.buildWhereStmt(filter)));
+            dao.select(filter).forEach((c) -> {
+                System.out.println(c);
+            });
+
+        }
+    }
+
+    private static class Test {
+
+        public Test() {
+        }
+
+        public int keyy;
+        public String valuee;
+
+        public int getKeyy() {
+            return keyy;
+        }
+
+        public void setKeyy(int keyy) {
+            this.keyy = keyy;
+        }
+
+        public String getValuee() {
+            return valuee;
+        }
+
+        public void setValuee(String valuee) {
+            this.valuee = valuee;
+        }
+
+        @Override
+        public String toString() {
+            return "Test{" + "keyy=" + keyy + ", valuee=" + valuee + '}';
+        }
+
     }
 
     /**
@@ -303,6 +382,30 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     }
 
     /**
+     * Builds the Where Statement based on a filter
+     *
+     * @return String
+     */
+    private String buildWhereStmt(Filter filter) {
+        StringBuilder sb = new StringBuilder(256);
+        if (!filter.isEmpty()) {
+            sb.append(" WHERE ");
+        }
+
+        List<FilterItem> get = filter.get();
+        int len = get.size();
+        for (int i = 0; i < len; i++) {
+            FilterItem item = get.get(i);
+            sb.append(item.getField()).append(item.getCondition()).append(item.getValue());
+            if (i < len - 1) {
+                sb.append(" AND ");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
      * Builds the SQL for the fields
      *
      * @return String
@@ -318,11 +421,6 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             }
         }
         return sb.toString();
-    }
-
-    @Override
-    public List<B> select(Filter filter) throws DBException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

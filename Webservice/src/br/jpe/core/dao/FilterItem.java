@@ -13,10 +13,50 @@ package br.jpe.core.dao;
 public class FilterItem {
 
     /** Name of the database field */
-    private String field;
+    private final String field;
     /** Condition to be used */
-    private FilterCondition condition;
+    private final FilterCondition condition;
     /** Value to filter */
-    private String value;
+    private final String value;
+
+    /**
+     * Constructor
+     *
+     * @param field
+     * @param condition
+     * @param value
+     */
+    public FilterItem(String field, FilterCondition condition, String value) {
+        this.field = field;
+        this.condition = condition;
+        this.value = value;
+    }
+
+    /**
+     * Returns the field name
+     *
+     * @return String
+     */
+    public String getField() {
+        return field;
+    }
+
+    /**
+     * Returns the Condition
+     *
+     * @return FilterCondition
+     */
+    public FilterCondition getCondition() {
+        return condition;
+    }
+
+    /**
+     * Returns the value
+     *
+     * @return String
+     */
+    public String getValue() {
+        return value;
+    }
 
 }
