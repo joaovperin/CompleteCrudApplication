@@ -5,6 +5,7 @@
  */
 package br.jpe.core.server;
 
+import br.jpe.core.utils.FileX;
 import java.io.File;
 import javax.servlet.ServletException;
 import org.apache.catalina.LifecycleException;
@@ -15,18 +16,25 @@ import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
 
 /**
+ * TomcatServer implementation
  *
- * @author programacao
+ * @author joaovperin
  */
 public class TomcatServer extends AbstractServer {
 
+    /** Webapps directory */
     private static final String WEB_APPS = "WEB-APP";
+    /** Classes directory */
     private static final String CLASSES = "/WEB-INF/classes";
+    /** Additional info */
     private static final File ADD_INFO = new File("build/classes");
 
     /** Tomcat instance */
     private Tomcat tomcat;
 
+    /**
+     * Runs the server
+     */
     @Override
     public void run() {
         System.out.println("*** Server starting...");
@@ -38,11 +46,22 @@ public class TomcatServer extends AbstractServer {
         }
     }
 
+    /**
+     * Stops the server
+     */
     @Override
     public void stop() {
         System.out.println("*** Server stopping...");
+        try {
+            tomcat.stop();
+        } catch (LifecycleException e) {
+            e.printStackTrace(System.out);
+        }
     }
 
+    /**
+     * Configures the server
+     */
     @Override
     public void configure() {
         System.out.println("*** Server configuring...");
@@ -63,17 +82,13 @@ public class TomcatServer extends AbstractServer {
         }
     }
 
+    /**
+     * Prepares the folder structure
+     */
     private static void prepareFolderStructure() {
-        createDirIfNotExists(new File(WEB_APPS));
-        createDirIfNotExists(new File(CLASSES));
-        createDirIfNotExists(ADD_INFO);
-    }
-
-    private static void createDirIfNotExists(File f) {
-        if (!f.exists() && f.isDirectory()) {
-            System.out.println("*** Creating directory ".concat(f.getName()).concat(" ..."));
-            f.mkdir();
-        }
+        FileX.createDirIfNotExists(new File(WEB_APPS));
+        FileX.createDirIfNotExists(new File(CLASSES));
+        FileX.createDirIfNotExists(ADD_INFO);
     }
 
 }
