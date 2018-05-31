@@ -63,9 +63,62 @@ public class GenericDAOTest {
     @org.junit.Test
     public void testSelect() throws DBException {
         try (Connection conn = ConnectionFactory.query()) {
-            new GenericDAO<>(conn, Test.class).select().forEach((t) -> {
+            List<Object> list = new GenericDAO<>(conn, Test.class).select();
+            list.forEach((t) -> {
                 assertNotNull(t);
             });
+        }
+    }
+
+    /**
+     * Tests the select method with filters
+     *
+     * @throws DBException
+     */
+    @org.junit.Test
+    public void testSelectWithFilters() throws DBException {
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
+            // Inserts some dummy temporary data (it will rollback after)
+            dao.insert(new Test(11, "foo"));
+            dao.insert(new Test(12, "bar"));
+            dao.insert(new Test(13, "foobar"));
+            // OR filter testing
+            Filter filter = new GenericFilter();
+            filter.add("keyy", FilterCondition.EQUAL, "11");
+            filter.addOperator(FilterOperator.OR);
+            filter.add("keyy", FilterCondition.EQUAL, "13");
+            // OR filter asserts
+            List<Test> list = dao.select(filter);
+            assertEquals(2, list.size());
+            assertNotNull(list.stream().filter((e) -> e.keyy == 11).findAny().get());
+            assertNotNull(list.stream().filter((e) -> e.keyy == 13).findAny().get());
+
+            // AND filter testing
+            filter = new GenericFilter();
+            filter.add("keyy", FilterCondition.EQUAL, "12");
+            filter.addOperator(FilterOperator.AND);
+            filter.add("valuee", FilterCondition.EQUAL, "bar");
+            // OR filter asserts
+            list = dao.select(filter);
+            assertEquals(1, list.size());
+            assertNotNull(list.stream().filter((e) -> e.keyy == 12 && e.valuee.equals("bar")).findAny().get());
+
+            // Expression filter testing
+            filter = new GenericFilter();
+            filter.begin();
+            filter.add("keyy", FilterCondition.EQUAL, "12");
+            filter.addOperator(FilterOperator.AND);
+            filter.add("valuee", FilterCondition.EQUAL, "bar");
+            filter.end();
+            filter.addOperator(FilterOperator.OR);
+            filter.add("keyy", FilterCondition.EQUAL, "13");
+
+            // Expression filter asserts
+            list = dao.select(filter);
+            assertEquals(2, list.size());
+            assertNotNull(list.stream().filter((e) -> e.keyy == 12 && e.valuee.equals("bar")).findAny().get());
+            assertNotNull(list.stream().filter((e) -> e.keyy == 13).findAny().get());
         }
     }
 
@@ -95,16 +148,15 @@ public class GenericDAOTest {
     @org.junit.Test
     public void testUpdate() throws DBException {
         try (Connection conn = ConnectionFactory.transaction()) {
-            Test obj = new Test();
-            obj.keyy = 1;
-            obj.valuee = "new Name";
-            new GenericDAO<>(conn, Test.class).update(obj);
+            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
+            Test obj = new Test(1, "new Name");
+            dao.update(obj);
             conn.commit();
             // Asserts it's changed
             assertEquals(1, obj.keyy);
             assertEquals("new Name", obj.valuee);
             // Asserts it will return an object equal
-            Test get = new GenericDAO<Test>(conn, Test.class).select().get(0);
+            Test get = dao.select().get(0);
             assertEquals(1, get.keyy);
             assertEquals("new Name", get.valuee);
         }
@@ -120,10 +172,11 @@ public class GenericDAOTest {
         try (Connection conn = ConnectionFactory.transaction()) {
             Test obj = new Test();
             obj.keyy = 1;
-            new GenericDAO<>(conn, Test.class).delete(obj);
+            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
+            dao.delete(obj);
             conn.commit();
             // Asserts it will return an object equal
-            List<Test> list = new GenericDAO<Test>(conn, Test.class).select();
+            List<Test> list = dao.select();
             assertTrue(list.isEmpty());
         }
     }
@@ -134,6 +187,11 @@ public class GenericDAOTest {
     private static class Test {
 
         public Test() {
+        }
+
+        public Test(int keyy, String valuee) {
+            this.keyy = keyy;
+            this.valuee = valuee;
         }
 
         private int keyy;

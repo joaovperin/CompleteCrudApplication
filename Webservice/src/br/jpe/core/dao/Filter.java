@@ -25,7 +25,7 @@ public interface Filter {
     public void end();
 
     /**
-     * Adds a filter
+     * Adds a filter on a field
      *
      * @param field
      * @param condition
@@ -34,7 +34,14 @@ public interface Filter {
     public void add(String field, FilterCondition condition, String value);
 
     /**
-     * Returns the filter itens list
+     * Adds a filter operator
+     *
+     * @param operator
+     */
+    public void addOperator(FilterOperator operator);
+
+    /**
+     * Returns a copy of the filter itens list
      *
      * @return List
      */

@@ -5,7 +5,6 @@
  */
 package br.jpe.core.dao;
 
-import br.jpe.core.database.ConnectionFactory;
 import br.jpe.core.utils.TextX;
 import br.jpe.core.database.DBException;
 import java.lang.reflect.Field;
@@ -72,7 +71,8 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     }
 
     /**
-     * Executes a SELECT statement on the database and returns a list of beans based on a filter
+     * Executes a SELECT statement on the database and returns a list of beans
+     * based on a filter
      *
      * @param filter
      * @return List
@@ -102,51 +102,6 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             throw new DBException(e);
         }
         return list;
-    }
-
-    public static void main(String[] args) throws DBException {
-        try (Connection conn = ConnectionFactory.query()) {
-            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
-            Filter filter = new FilterImpl();
-            filter.add("keyy", FilterCondition.EQUAL, "2");
-//            filter.add("value", FilterCondition.EQUAL, "3");
-            System.out.println(dao.buildSelectStmt().concat(dao.buildWhereStmt(filter)));
-            dao.select(filter).forEach((c) -> {
-                System.out.println(c);
-            });
-
-        }
-    }
-
-    private static class Test {
-
-        public Test() {
-        }
-
-        public int keyy;
-        public String valuee;
-
-        public int getKeyy() {
-            return keyy;
-        }
-
-        public void setKeyy(int keyy) {
-            this.keyy = keyy;
-        }
-
-        public String getValuee() {
-            return valuee;
-        }
-
-        public void setValuee(String valuee) {
-            this.valuee = valuee;
-        }
-
-        @Override
-        public String toString() {
-            return "Test{" + "keyy=" + keyy + ", valuee=" + valuee + '}';
-        }
-
     }
 
     /**
@@ -247,7 +202,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @return B
      * @throws java.lang.ReflectiveOperationException
      */
-    public B createBean() throws ReflectiveOperationException {
+    private B createBean() throws ReflectiveOperationException {
         try {
             return (B) beanClass.newInstance();
         } catch (IllegalAccessException | InstantiationException ex) {
@@ -262,7 +217,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @return Method
      * @throws java.lang.ReflectiveOperationException
      */
-    public Method getSetter(Field field) throws ReflectiveOperationException {
+    private Method getSetter(Field field) throws ReflectiveOperationException {
         try {
             return beanClass.getMethod("set" + TextX.capitalize(field.getName()), field.getType());
         } catch (NoSuchMethodException | SecurityException ex) {
@@ -277,7 +232,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @return Method
      * @throws java.lang.ReflectiveOperationException
      */
-    public Method getGetter(Field field) throws ReflectiveOperationException {
+    private Method getGetter(Field field) throws ReflectiveOperationException {
         try {
             Class<?> type = field.getType();
             String prefix = type.equals(Boolean.class) ? "is" : "get";
@@ -294,7 +249,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @return Method
      * @throws ReflectiveOperationException
      */
-    public Method getGetterFromRs(Field field) throws ReflectiveOperationException {
+    private Method getGetterFromRs(Field field) throws ReflectiveOperationException {
         try {
             return ResultSet.class.getMethod("get" + TextX.capitalize(field.getType().getSimpleName()), int.class);
         } catch (NoSuchMethodException | SecurityException ex) {
@@ -343,7 +298,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      *
      * @return String
      */
-    public String buildUpdateStmt() {
+    private String buildUpdateStmt() {
         StringBuilder sb = new StringBuilder(256).
                 append("UPDATE ").
                 append(beanClass.getSimpleName()).
@@ -369,7 +324,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      *
      * @return String
      */
-    public String buildDeleteStmt() {
+    private String buildDeleteStmt() {
         StringBuilder sb = new StringBuilder(256).
                 append("DELETE FROM ").
                 append(beanClass.getSimpleName());
@@ -391,17 +346,20 @@ public class GenericDAO<B> implements DataAccessObject<B> {
         if (!filter.isEmpty()) {
             sb.append(" WHERE ");
         }
-
+        // List of filters
         List<FilterItem> get = filter.get();
         int len = get.size();
         for (int i = 0; i < len; i++) {
             FilterItem item = get.get(i);
-            sb.append(item.getField()).append(item.getCondition()).append(item.getValue());
-            if (i < len - 1) {
-                sb.append(" AND ");
+            // If it's an operator or an expression, only append it's value
+            if (item.isOperator() || item.isExpression()) {
+                sb.append(item.getValue());
+            } else {
+                sb.append(item.getField()).
+                        append(item.getCondition()).
+                        append("'").append(item.getValue()).append("'");
             }
         }
-
         return sb.toString();
     }
 
