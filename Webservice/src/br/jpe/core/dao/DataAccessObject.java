@@ -25,7 +25,8 @@ public interface DataAccessObject<B> {
     public List<B> select() throws DBException;
 
     /**
-     * Executes a SELECT statement on the database and returns a list of beans based on a filter
+     * Executes a SELECT statement on the database and returns a list of beans
+     * based on a filter
      *
      * @param filter
      * @return List
@@ -34,10 +35,20 @@ public interface DataAccessObject<B> {
     public List<B> select(Filter filter) throws DBException;
 
     /**
+     * Executes a SELECT statement on the database and returns the first bean
+     * matching the filter
+     *
+     * @param filter
+     * @return List
+     * @throws DBException
+     */
+    public B selectOne(Filter filter) throws DBException;
+
+    /**
      * INSERT a register on the database and returns true if it works
      *
      * @param bean
-     * @return List
+     * @return boolean
      * @throws DBException
      */
     public boolean insert(B bean) throws DBException;
@@ -46,18 +57,58 @@ public interface DataAccessObject<B> {
      * UPDATE a register on the database and returns true if it's modified
      *
      * @param bean
-     * @return List
+     * @return boolean
      * @throws DBException
      */
     public boolean update(B bean) throws DBException;
 
     /**
+     * UPDATE all registers on the database and returns how much records were
+     * updated
+     *
+     * @param bean
+     * @return long
+     * @throws DBException
+     */
+    public long updateAll(B bean) throws DBException;
+
+    /**
+     * UPDATE all registers on the database and returns how much records were
+     * updated. This works based on a filter
+     *
+     * @param bean
+     * @param filter
+     * @return long
+     * @throws DBException
+     */
+    public long updateAll(B bean, Filter filter) throws DBException;
+
+    /**
      * DELETE a register on the database and returns true if it's deleted
      *
      * @param bean
-     * @return List
+     * @return boolean
      * @throws DBException
      */
     public boolean delete(B bean) throws DBException;
+
+    /**
+     * DELETE all registers on the database and returns how much records were
+     * deleted
+     *
+     * @return long
+     * @throws DBException
+     */
+    public long deleteAll() throws DBException;
+
+    /**
+     * DELETE registers on the database and returns how much records were
+     * deleted. This works based on a Filter
+     *
+     * @param filter
+     * @return long
+     * @throws DBException
+     */
+    public long deleteAll(Filter filter) throws DBException;
 
 }

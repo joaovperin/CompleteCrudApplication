@@ -19,6 +19,8 @@ public class GenericFilter implements Filter {
     private static final String BEGIN_EXPRESSION = "(";
     /** End of an expression mark */
     private static final String END_EXPRESSION = ")";
+    /** SQL Limit clause */
+    private static final String LIMIT_CLAUSE = " LIMIT ";
 
     /** List of filters */
     private final List<FilterItem> list;
@@ -68,6 +70,42 @@ public class GenericFilter implements Filter {
     }
 
     /**
+     * Adds a filter on a field
+     *
+     * @param field
+     * @param condition
+     * @param value
+     */
+    @Override
+    public void add(String field, FilterCondition condition, int value) {
+        this.add(field, condition, String.valueOf(value));
+    }
+
+    /**
+     * Adds a filter on a field
+     *
+     * @param field
+     * @param condition
+     * @param value
+     */
+    @Override
+    public void add(String field, FilterCondition condition, long value) {
+        this.add(field, condition, String.valueOf(value));
+    }
+
+    /**
+     * Adds a filter on a field
+     *
+     * @param field
+     * @param condition
+     * @param value
+     */
+    @Override
+    public void add(String field, FilterCondition condition, char value) {
+        this.add(field, condition, String.valueOf(value));
+    }
+
+    /**
      * Adds a filter operator
      *
      * @param operator
@@ -75,6 +113,15 @@ public class GenericFilter implements Filter {
     @Override
     public void addOperator(FilterOperator operator) {
         list.add(new FilterItem(operator));
+    }
+
+    /**
+     * Adds a "LIMIT" clause
+     *
+     * @param recordsCount
+     */
+    public void addLimit(long recordsCount) {
+        list.add(new FilterItem(LIMIT_CLAUSE.concat(String.valueOf(recordsCount))));
     }
 
     /**

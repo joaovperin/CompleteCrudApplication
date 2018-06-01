@@ -5,6 +5,7 @@
  */
 package br.jpe.core.dao;
 
+import br.jpe.core.dao.testing.TestBean;
 import br.jpe.core.database.connection.Connection;
 import br.jpe.core.database.ConnectionFactory;
 import br.jpe.core.database.DBException;
@@ -29,15 +30,9 @@ public class GenericDAOTest {
      */
     @BeforeClass
     public static void setUpDatabase() throws DBException, SQLException {
-        try (Connection cn = ConnectionFactory.transaction()) {
-            // Create table
-            StringBuilder sb = new StringBuilder();
-            sb.append("CREATE TABLE IF NOT EXISTS Test (");
-            sb.append("Keyy int not null auto_increment, ");
-            sb.append("Valuee varchar(255), ");
-            sb.append("PRIMARY KEY (Keyy))");
-            cn.createStmt().executeUpdate(sb.toString());
-            cn.commit();
+        try (Connection conn = ConnectionFactory.transaction()) {
+            DBUtils.createTestDB(conn);
+            conn.commit();
         }
     }
 
@@ -49,9 +44,9 @@ public class GenericDAOTest {
      */
     @AfterClass
     public static void cleanUpDatabase() throws DBException, SQLException {
-        try (Connection cn = ConnectionFactory.transaction()) {
-            cn.createStmt().executeUpdate("DROP TABLE IF EXISTS Test");
-            cn.commit();
+        try (Connection conn = ConnectionFactory.transaction()) {
+            DBUtils.deleteTestDB(conn);
+            conn.commit();
         }
     }
 
@@ -62,11 +57,14 @@ public class GenericDAOTest {
      */
     @org.junit.Test
     public void testSelect() throws DBException {
-        try (Connection conn = ConnectionFactory.query()) {
-            List<Object> list = new GenericDAO<>(conn, Test.class).select();
-            list.forEach((t) -> {
-                assertNotNull(t);
-            });
+        TestBean bean = new TestBean(1, "foo");
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+            dao.insert(bean);
+
+            List<TestBean> list = dao.select();
+            list.forEach((t) -> assertNotNull(t));
+            assertTrue(list.contains(bean));
         }
     }
 
@@ -78,18 +76,19 @@ public class GenericDAOTest {
     @org.junit.Test
     public void testSelectWithFilters() throws DBException {
         try (Connection conn = ConnectionFactory.transaction()) {
-            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
+            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
             // Inserts some dummy temporary data (it will rollback after)
-            dao.insert(new Test(11, "foo"));
-            dao.insert(new Test(12, "bar"));
-            dao.insert(new Test(13, "foobar"));
+            dao.insert(new TestBean(11, "foo"));
+            dao.insert(new TestBean(12, "bar"));
+            dao.insert(new TestBean(13, "foobar"));
+
             // OR filter testing
             Filter filter = new GenericFilter();
             filter.add("keyy", FilterCondition.EQUAL, "11");
             filter.addOperator(FilterOperator.OR);
             filter.add("keyy", FilterCondition.EQUAL, "13");
             // OR filter asserts
-            List<Test> list = dao.select(filter);
+            List<TestBean> list = dao.select(filter);
             assertEquals(2, list.size());
             assertNotNull(list.stream().filter((e) -> e.keyy == 11).findAny().get());
             assertNotNull(list.stream().filter((e) -> e.keyy == 13).findAny().get());
@@ -99,7 +98,7 @@ public class GenericDAOTest {
             filter.add("keyy", FilterCondition.EQUAL, "12");
             filter.addOperator(FilterOperator.AND);
             filter.add("valuee", FilterCondition.EQUAL, "bar");
-            // OR filter asserts
+            // AND filter asserts
             list = dao.select(filter);
             assertEquals(1, list.size());
             assertNotNull(list.stream().filter((e) -> e.keyy == 12 && e.valuee.equals("bar")).findAny().get());
@@ -129,15 +128,14 @@ public class GenericDAOTest {
      */
     @org.junit.Test
     public void testInsert() throws DBException {
-        Test obj = new Test();
+        TestBean obj = new TestBean();
         try (Connection cn = ConnectionFactory.transaction()) {
-            obj.keyy = 0;
-            obj.valuee = "useless name here";
-            new GenericDAO<>(cn, Test.class).insert(obj);
-            cn.commit();
+            obj.setKeyy(0);
+            obj.setValuee("useless name here");
+            new GenericDAO<>(cn, TestBean.class).insert(obj);
         }
         // Asserts it will get the auto-incremented key
-        assertEquals(1, obj.keyy);
+        assertNotEquals(0, obj.keyy);
     }
 
     /**
@@ -148,17 +146,58 @@ public class GenericDAOTest {
     @org.junit.Test
     public void testUpdate() throws DBException {
         try (Connection conn = ConnectionFactory.transaction()) {
-            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
-            Test obj = new Test(1, "new Name");
+            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+
+            final int code = 39;
+            // Inserts a dummy testing record with code 39
+            TestBean obj = new TestBean(code, "old name");
+            dao.insert(obj);
+
+            // Updates the code 39 record value
+            obj = new TestBean(code, "new Name");
             dao.update(obj);
-            conn.commit();
+
             // Asserts it's changed
-            assertEquals(1, obj.keyy);
+            assertEquals(code, obj.keyy);
             assertEquals("new Name", obj.valuee);
+
+            Filter filter = new GenericFilter();
+            filter.add("keyy", FilterCondition.EQUAL, code);
+
             // Asserts it will return an object equal
-            Test get = dao.select().get(0);
-            assertEquals(1, get.keyy);
+            TestBean get = dao.selectOne(filter);
+            assertEquals(code, get.keyy);
             assertEquals("new Name", get.valuee);
+        }
+    }
+
+    /**
+     * Tests the UpdateAll method
+     *
+     * @throws DBException
+     */
+    @org.junit.Test
+    public void testUpdateAll() throws DBException {
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+
+            dao.insert(new TestBean(3, "haha"));
+            dao.insert(new TestBean(4, "hehe"));
+            dao.insert(new TestBean(5, "hihi"));
+
+            GenericFilter filter = new GenericFilter();
+            filter.add("keyy", FilterCondition.EQUAL, "3");
+            filter.addOperator(FilterOperator.OR);
+            filter.add("keyy", FilterCondition.EQUAL, "5");
+
+            dao.updateAll(new TestBean(4, "new Name"), filter);
+
+            // Asserts it will return an object equal
+            List<TestBean> list = dao.select(filter);
+            assertEquals(2, list.size());
+            assertEquals(3, list.get(0).keyy);
+            assertEquals(5, list.get(1).keyy);
+            list.forEach((e) -> assertEquals("new Name", e.valuee));
         }
     }
 
@@ -170,54 +209,50 @@ public class GenericDAOTest {
     @org.junit.Test
     public void testDelete() throws DBException {
         try (Connection conn = ConnectionFactory.transaction()) {
-            Test obj = new Test();
+            TestBean obj = new TestBean();
             obj.keyy = 1;
-            GenericDAO<Test> dao = new GenericDAO<>(conn, Test.class);
+            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
             dao.delete(obj);
-            conn.commit();
             // Asserts it will return an object equal
-            List<Test> list = dao.select();
+            List<TestBean> list = dao.select();
             assertTrue(list.isEmpty());
         }
     }
 
     /**
-     * Just for testing purposes.
+     * Tests the DeleteAll method
+     *
+     * @throws DBException
      */
-    private static class Test {
+    @org.junit.Test
+    public void testDeleteAll() throws DBException {
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+            // Cleans up the database
+            dao.deleteAll();
 
-        public Test() {
+            // Adds 3 records
+            dao.insert(new TestBean(3, "haha"));
+            TestBean bean2 = new TestBean(4, "hehe");
+            dao.insert(bean2);
+            dao.insert(new TestBean(5, "hihi"));
+
+            // Creates a filter for 2 of the 3 inserted records
+            GenericFilter filter = new GenericFilter();
+            filter.add("keyy", FilterCondition.EQUAL, "3");
+            filter.addOperator(FilterOperator.OR);
+            filter.add("keyy", FilterCondition.EQUAL, "5");
+
+            // Deletes registers 3 and 5, so it will only left the 4
+            dao.deleteAll(filter);  // TODO: VERIFYY THAT
+
+            // Asserts it will return an object equal
+            List<TestBean> list = dao.select();
+            assertEquals(1, list.size());
+            assertEquals(4, list.get(0).keyy);
+            assertTrue(list.get(0).equals(bean2));
+            assertTrue(list.contains(bean2));
         }
-
-        public Test(int keyy, String valuee) {
-            this.keyy = keyy;
-            this.valuee = valuee;
-        }
-
-        private int keyy;
-        private String valuee;
-
-        public int getKeyy() {
-            return keyy;
-        }
-
-        public void setKeyy(int keyy) {
-            this.keyy = keyy;
-        }
-
-        public String getValuee() {
-            return valuee;
-        }
-
-        public void setValuee(String valuee) {
-            this.valuee = valuee;
-        }
-
-        @Override
-        public String toString() {
-            return "Test{" + "chave=" + keyy + ", valor=" + valuee + '}';
-        }
-
     }
 
 }

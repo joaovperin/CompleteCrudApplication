@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import br.jpe.core.database.connection.Connection;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 
 /**
  * A Generic Data Access Object
@@ -50,21 +51,25 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     @Override
     public List<B> select() throws DBException {
         List<B> list = new ArrayList<>();
-        try (ResultSet rs = conn.createStmt().executeQuery(buildSelectStmt())) {
-            while (rs.next()) {
-                try {
-                    B bean = createBean();
-                    int i = 1;
-                    for (Field field : beanClass.getDeclaredFields()) {
-                        Object value = getGetterFromRs(field).invoke(rs, i++);
-                        getSetter(field).invoke(bean, value);
+        try (Statement stm = conn.createStmt()) {
+            try (ResultSet rs = stm.executeQuery(buildSelectStmt())) {
+                while (rs.next()) {
+                    try {
+                        B bean = createBean();
+                        int i = 1;
+                        for (Field field : beanClass.getDeclaredFields()) {
+                            Object value = getGetterFromRs(field).invoke(rs, i++);
+                            getSetter(field).invoke(bean, value);
+                        }
+                        list.add(bean);
+                    } catch (ReflectiveOperationException e) {
+                        throw new DBException(e);
                     }
-                    list.add(bean);
-                } catch (ReflectiveOperationException e) {
-                    throw new DBException(e);
                 }
+            } catch (SQLException e) {
+                throw new DBException(e);
             }
-        } catch (DBException | SQLException e) {
+        } catch (SQLException e) {
             throw new DBException(e);
         }
         return list;
@@ -105,6 +110,26 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     }
 
     /**
+     * Selects ONE register (or null)
+     *
+     * @param filter
+     * @return B
+     * @throws DBException
+     */
+    @Override
+    public B selectOne(Filter filter) throws DBException {
+        // Adds a LIMIT clause to the filter
+        Filter newFilter = new GenericFilter(filter);
+        newFilter.addLimit(1);
+        List<B> list = select(newFilter);
+        // If no record fits the filter, returns null
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.get(0);
+    }
+
+    /**
      * INSERT a register on the database and returns true if it works
      *
      * @param bean
@@ -126,12 +151,13 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             }
             // Executes the update and retrieve generated keys (if auto increment)
             int executeUpdate = pstm.executeUpdate();
-            ResultSet rs = pstm.getGeneratedKeys();
-            int i = 0;
-            while (rs.next()) {
-                Field field = fields[i++];
-                Method getter = getGetterFromRs(field);
-                getSetter(field).invoke(bean, getter.invoke(rs, i));
+            try (ResultSet rs = pstm.getGeneratedKeys()) {
+                int i = 0;
+                while (rs.next()) {
+                    Field field = fields[i++];
+                    Method getter = getGetterFromRs(field);
+                    getSetter(field).invoke(bean, getter.invoke(rs, i));
+                }
             }
             return executeUpdate > 0;
         } catch (DBException | SQLException | ReflectiveOperationException e) {
@@ -148,11 +174,14 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     @Override
     public boolean update(B bean) throws DBException {
-        try (PreparedStatement pstm = conn.prepareStmt(buildUpdateStmt())) {
+        try (PreparedStatement pstm = conn.prepareStmt(buildUpdateStmt().concat(buildWhereStmt(beanClass)))) {
+            // Copy the array of fields ignoring the PK (first field)
             Field[] fields = beanClass.getDeclaredFields();
+            // Executes the update set logic
             try {
                 int i = 1;
-                for (Field field : fields) {
+                for (int j = 1; j < fields.length; j++) {
+                    Field field = fields[j];
                     Object value = getGetter(field).invoke(bean);
                     pstm.setObject(i++, value);
                 }
@@ -171,6 +200,52 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     }
 
     /**
+     * UPDATE all registers on the database and returns how much records were
+     * updated
+     *
+     * @param bean
+     * @return long
+     * @throws DBException
+     */
+    @Override
+    public long updateAll(B bean) throws DBException {
+        return updateAll(bean, new GenericFilter());
+    }
+
+    /**
+     * UPDATE all registers on the database and returns how much records were
+     * updated. This works based on a filter
+     *
+     * @param bean
+     * @param filter
+     * @return long
+     * @throws DBException
+     */
+    @Override
+    public long updateAll(B bean, Filter filter) throws DBException {
+        try (PreparedStatement pstm = conn.prepareStmt(buildUpdateStmt().concat(buildWhereStmt(filter)))) {
+            // Copy the array of fields ignoring the PK (first field)
+            Field[] fields = beanClass.getDeclaredFields();
+            // Executes the update set logic
+            try {
+                int i = 1;
+                for (int j = 1; j < fields.length; j++) {
+                    Field field = fields[j];
+                    Object value = getGetter(field).invoke(bean);
+                    pstm.setObject(i++, value);
+                }
+            } catch (ReflectiveOperationException e) {
+                throw new DBException(e);
+            }
+            // Executes the update
+            int executeUpdate = pstm.executeUpdate();
+            return executeUpdate;
+        } catch (DBException | SQLException e) {
+            throw new DBException(e);
+        }
+    }
+
+    /**
      * DELETE a register on the database and returns true if it's deleted
      *
      * @param bean
@@ -179,7 +254,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     @Override
     public boolean delete(B bean) throws DBException {
-        try (PreparedStatement pstm = conn.prepareStmt(buildDeleteStmt())) {
+        try (PreparedStatement pstm = conn.prepareStmt(buildDeleteStmt().concat(buildWhereStmt(beanClass)))) {
             Field[] fields = beanClass.getDeclaredFields();
             try {
                 // Primary key
@@ -191,6 +266,35 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             // Executes the update
             int executeUpdate = pstm.executeUpdate();
             return executeUpdate > 0;
+        } catch (DBException | SQLException e) {
+            throw new DBException(e);
+        }
+    }
+
+    /**
+     * DELETE registers on the database and returns how much records were
+     * deleted
+     *
+     * @return long
+     * @throws DBException
+     */
+    public long deleteAll() throws DBException {
+        return deleteAll(new GenericFilter());
+    }
+
+    /**
+     * DELETE registers on the database and returns how much records were
+     * deleted. This works based on a Filter
+     *
+     * @param filter
+     * @return long
+     * @throws DBException
+     */
+    public long deleteAll(Filter filter) throws DBException {
+        try (PreparedStatement pstm = conn.prepareStmt(buildDeleteStmt().concat(buildWhereStmt(filter)))) {
+            // Executes the update
+            int executeUpdate = pstm.executeUpdate();
+            return executeUpdate;
         } catch (DBException | SQLException e) {
             throw new DBException(e);
         }
@@ -298,14 +402,14 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      *
      * @return String
      */
-    private String buildUpdateStmt() {
+    public String buildUpdateStmt() {
         StringBuilder sb = new StringBuilder(256).
                 append("UPDATE ").
                 append(beanClass.getSimpleName()).
                 append(" SET ");
         // For all declared fields
         Field[] fields = beanClass.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
+        for (int i = 1; i < fields.length; i++) {
             Field f = fields[i];
             sb.append(f.getName()).append(" = ?");
             if (i < fields.length - 1) {
@@ -313,10 +417,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             }
         }
         // First field is the primary key
-        return sb.append(" WHERE ").
-                append(String.format(" %s ", fields[0].getName())).
-                append(" = ?").
-                toString();
+        return sb.toString();
     }
 
     /**
@@ -324,13 +425,23 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      *
      * @return String
      */
-    private String buildDeleteStmt() {
-        StringBuilder sb = new StringBuilder(256).
+    public String buildDeleteStmt() {
+        return new StringBuilder(256).
                 append("DELETE FROM ").
-                append(beanClass.getSimpleName());
+                append(beanClass.getSimpleName()).
+                toString();
+    }
+
+    /**
+     * Returns the Where statement based on a bean's Primary Key
+     *
+     * @param bean
+     * @return String
+     */
+    public String buildWhereStmt(Class<?> bean) {
         // First field is the primary key
-        Field[] fields = beanClass.getDeclaredFields();
-        return sb.append(" WHERE ").
+        Field[] fields = bean.getDeclaredFields();
+        return new StringBuilder(256).append(" WHERE ").
                 append(String.format(" %s ", fields[0].getName())).
                 append(" = ?").
                 toString();
@@ -341,7 +452,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      *
      * @return String
      */
-    private String buildWhereStmt(Filter filter) {
+    public String buildWhereStmt(Filter filter) {
         StringBuilder sb = new StringBuilder(256);
         if (!filter.isEmpty()) {
             sb.append(" WHERE ");
