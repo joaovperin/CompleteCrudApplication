@@ -28,6 +28,8 @@ public class GenericDAO<B> implements DataAccessObject<B> {
 
     /** Bean Class */
     private final Class<?> beanClass;
+    /** SQL Builder object */
+    private final SQLBuilder sql;
     /** Connection to the database */
     protected final Connection conn;
 
@@ -39,6 +41,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     public GenericDAO(Connection conn, Class<?> beanClass) {
         this.beanClass = beanClass;
+        this.sql = new SQLBuilder(beanClass);
         this.conn = Objects.requireNonNull(conn, "A valid connection is needed.");
     }
 
@@ -52,7 +55,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     public List<B> select() throws DBException {
         List<B> list = new ArrayList<>();
         try (Statement stm = conn.createStmt()) {
-            try (ResultSet rs = stm.executeQuery(buildSelectStmt())) {
+            try (ResultSet rs = stm.executeQuery(sql.buildSelectStmt())) {
                 while (rs.next()) {
                     try {
                         B bean = createBean();
@@ -86,7 +89,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     @Override
     public List<B> select(Filter filter) throws DBException {
         List<B> list = new ArrayList<>();
-        try (PreparedStatement pstm = conn.prepareStmt(buildSelectStmt().concat(buildWhereStmt(filter)))) {
+        try (PreparedStatement pstm = conn.prepareStmt(sql.buildSelectStmt().concat(sql.buildWhereStmt(filter)))) {
             try (ResultSet rs = pstm.executeQuery()) {
                 // Iterates all results
                 while (rs.next()) {
@@ -138,7 +141,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     @Override
     public boolean insert(B bean) throws DBException {
-        try (PreparedStatement pstm = conn.prepareStmt(buildInsertStmt())) {
+        try (PreparedStatement pstm = conn.prepareStmt(sql.buildInsertStmt())) {
             Field[] fields = beanClass.getDeclaredFields();
             try {
                 int i = 1;
@@ -174,7 +177,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     @Override
     public boolean update(B bean) throws DBException {
-        try (PreparedStatement pstm = conn.prepareStmt(buildUpdateStmt().concat(buildWhereStmt(beanClass)))) {
+        try (PreparedStatement pstm = conn.prepareStmt(sql.buildUpdateStmt().concat(sql.buildWhereStmt()))) {
             // Copy the array of fields ignoring the PK (first field)
             Field[] fields = beanClass.getDeclaredFields();
             // Executes the update set logic
@@ -223,7 +226,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     @Override
     public long updateAll(B bean, Filter filter) throws DBException {
-        try (PreparedStatement pstm = conn.prepareStmt(buildUpdateStmt().concat(buildWhereStmt(filter)))) {
+        try (PreparedStatement pstm = conn.prepareStmt(sql.buildUpdateStmt().concat(sql.buildWhereStmt(filter)))) {
             // Copy the array of fields ignoring the PK (first field)
             Field[] fields = beanClass.getDeclaredFields();
             // Executes the update set logic
@@ -254,7 +257,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      */
     @Override
     public boolean delete(B bean) throws DBException {
-        try (PreparedStatement pstm = conn.prepareStmt(buildDeleteStmt().concat(buildWhereStmt(beanClass)))) {
+        try (PreparedStatement pstm = conn.prepareStmt(sql.buildDeleteStmt().concat(sql.buildWhereStmt()))) {
             Field[] fields = beanClass.getDeclaredFields();
             try {
                 // Primary key
@@ -291,7 +294,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @throws DBException
      */
     public long deleteAll(Filter filter) throws DBException {
-        try (PreparedStatement pstm = conn.prepareStmt(buildDeleteStmt().concat(buildWhereStmt(filter)))) {
+        try (PreparedStatement pstm = conn.prepareStmt(sql.buildDeleteStmt().concat(sql.buildWhereStmt(filter)))) {
             // Executes the update
             int executeUpdate = pstm.executeUpdate();
             return executeUpdate;
@@ -359,137 +362,6 @@ public class GenericDAO<B> implements DataAccessObject<B> {
         } catch (NoSuchMethodException | SecurityException ex) {
             throw new ReflectiveOperationException(ex);
         }
-    }
-
-    /**
-     * Builds the Select Statement
-     *
-     * @return String
-     */
-    private String buildSelectStmt() {
-        return new StringBuilder(256).
-                append("SELECT ").
-                append(buildSqlFields()).
-                append(" FROM ").
-                append(beanClass.getSimpleName()).
-                toString();
-    }
-
-    /**
-     * Builds the Insert Statement
-     *
-     * @return String
-     */
-    private String buildInsertStmt() {
-        StringBuilder sb = new StringBuilder(256).
-                append("INSERT INTO ").
-                append(beanClass.getSimpleName()).
-                append(" (").append(buildSqlFields()).append(") ").
-                append(" VALUES (");
-        // For all declared fields
-        Field[] fields = beanClass.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
-            sb.append('?');
-            if (i < fields.length - 1) {
-                sb.append(", ");
-            }
-        }
-        return sb.append(")").toString();
-    }
-
-    /**
-     * Builds the Update Statement
-     *
-     * @return String
-     */
-    public String buildUpdateStmt() {
-        StringBuilder sb = new StringBuilder(256).
-                append("UPDATE ").
-                append(beanClass.getSimpleName()).
-                append(" SET ");
-        // For all declared fields
-        Field[] fields = beanClass.getDeclaredFields();
-        for (int i = 1; i < fields.length; i++) {
-            Field f = fields[i];
-            sb.append(f.getName()).append(" = ?");
-            if (i < fields.length - 1) {
-                sb.append(", ");
-            }
-        }
-        // First field is the primary key
-        return sb.toString();
-    }
-
-    /**
-     * Builds the Delete Statement
-     *
-     * @return String
-     */
-    public String buildDeleteStmt() {
-        return new StringBuilder(256).
-                append("DELETE FROM ").
-                append(beanClass.getSimpleName()).
-                toString();
-    }
-
-    /**
-     * Returns the Where statement based on a bean's Primary Key
-     *
-     * @param bean
-     * @return String
-     */
-    public String buildWhereStmt(Class<?> bean) {
-        // First field is the primary key
-        Field[] fields = bean.getDeclaredFields();
-        return new StringBuilder(256).append(" WHERE ").
-                append(String.format(" %s ", fields[0].getName())).
-                append(" = ?").
-                toString();
-    }
-
-    /**
-     * Builds the Where Statement based on a filter
-     *
-     * @return String
-     */
-    public String buildWhereStmt(Filter filter) {
-        StringBuilder sb = new StringBuilder(256);
-        if (!filter.isEmpty()) {
-            sb.append(" WHERE ");
-        }
-        // List of filters
-        List<FilterItem> get = filter.get();
-        int len = get.size();
-        for (int i = 0; i < len; i++) {
-            FilterItem item = get.get(i);
-            // If it's an operator or an expression, only append it's value
-            if (item.isOperator() || item.isExpression()) {
-                sb.append(item.getValue());
-            } else {
-                sb.append(item.getField()).
-                        append(item.getCondition()).
-                        append("'").append(item.getValue()).append("'");
-            }
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Builds the SQL for the fields
-     *
-     * @return String
-     */
-    private String buildSqlFields() {
-        StringBuilder sb = new StringBuilder();
-        Field[] fields = beanClass.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-            sb.append(field.getName());
-            if (i < fields.length - 1) {
-                sb.append(", ");
-            }
-        }
-        return sb.toString();
     }
 
 }
