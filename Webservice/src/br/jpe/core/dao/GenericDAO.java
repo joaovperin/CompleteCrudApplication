@@ -5,7 +5,6 @@
  */
 package br.jpe.core.dao;
 
-import br.jpe.core.utils.TextX;
 import br.jpe.core.database.DBException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -15,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import br.jpe.core.database.connection.Connection;
+import br.jpe.core.utils.ReflectionX;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 
@@ -27,7 +27,7 @@ import java.sql.Statement;
 public class GenericDAO<B> implements DataAccessObject<B> {
 
     /** Bean Class */
-    private final Class<?> beanClass;
+    private final Class<B> beanClass;
     /** SQL Builder object */
     private final SQLBuilder sql;
     /** Connection to the database */
@@ -39,7 +39,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @param conn
      * @param beanClass
      */
-    public GenericDAO(Connection conn, Class<?> beanClass) {
+    public GenericDAO(Connection conn, Class<B> beanClass) {
         this.beanClass = beanClass;
         this.sql = new SQLBuilder(beanClass);
         this.conn = Objects.requireNonNull(conn, "A valid connection is needed.");
@@ -58,11 +58,11 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             try (ResultSet rs = stm.executeQuery(sql.buildSelectStmt())) {
                 while (rs.next()) {
                     try {
-                        B bean = createBean();
+                        B bean = ReflectionX.instantiate(beanClass);
                         int i = 1;
                         for (Field field : beanClass.getDeclaredFields()) {
-                            Object value = getGetterFromRs(field).invoke(rs, i++);
-                            getSetter(field).invoke(bean, value);
+                            Object value = ReflectionX.getterResultSetInt(field).invoke(rs, i++);
+                            ReflectionX.setter(beanClass, field).invoke(bean, value);
                         }
                         list.add(bean);
                     } catch (ReflectiveOperationException e) {
@@ -94,11 +94,11 @@ public class GenericDAO<B> implements DataAccessObject<B> {
                 // Iterates all results
                 while (rs.next()) {
                     try {
-                        B bean = createBean();
+                        B bean = ReflectionX.instantiate(beanClass);
                         int i = 1;
                         for (Field field : beanClass.getDeclaredFields()) {
-                            Object value = getGetterFromRs(field).invoke(rs, i++);
-                            getSetter(field).invoke(bean, value);
+                            Object value = ReflectionX.getterResultSetInt(field).invoke(rs, i++);
+                            ReflectionX.setter(beanClass, field).invoke(bean, value);
                         }
                         list.add(bean);
                     } catch (ReflectiveOperationException e) {
@@ -146,7 +146,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             try {
                 int i = 1;
                 for (Field field : fields) {
-                    Object value = getGetter(field).invoke(bean);
+                    Object value = ReflectionX.getter(beanClass, field).invoke(bean);
                     pstm.setObject(i++, value);
                 }
             } catch (ReflectiveOperationException e) {
@@ -158,8 +158,8 @@ public class GenericDAO<B> implements DataAccessObject<B> {
                 int i = 0;
                 while (rs.next()) {
                     Field field = fields[i++];
-                    Method getter = getGetterFromRs(field);
-                    getSetter(field).invoke(bean, getter.invoke(rs, i));
+                    Method getter = ReflectionX.getterResultSetInt(field);
+                    ReflectionX.setter(beanClass, field).invoke(bean, getter.invoke(rs, i));
                 }
             }
             return executeUpdate > 0;
@@ -185,11 +185,11 @@ public class GenericDAO<B> implements DataAccessObject<B> {
                 int i = 1;
                 for (int j = 1; j < fields.length; j++) {
                     Field field = fields[j];
-                    Object value = getGetter(field).invoke(bean);
+                    Object value = ReflectionX.getter(beanClass, field).invoke(bean);
                     pstm.setObject(i++, value);
                 }
                 // Primary key
-                Object value = getGetter(fields[0]).invoke(bean);
+                Object value = ReflectionX.getter(beanClass, fields[0]).invoke(bean);
                 pstm.setObject(i, value);
             } catch (ReflectiveOperationException e) {
                 throw new DBException(e);
@@ -234,7 +234,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
                 int i = 1;
                 for (int j = 1; j < fields.length; j++) {
                     Field field = fields[j];
-                    Object value = getGetter(field).invoke(bean);
+                    Object value = ReflectionX.getter(beanClass, field).invoke(bean);
                     pstm.setObject(i++, value);
                 }
             } catch (ReflectiveOperationException e) {
@@ -261,7 +261,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             Field[] fields = beanClass.getDeclaredFields();
             try {
                 // Primary key
-                Object value = getGetter(fields[0]).invoke(bean);
+                Object value = ReflectionX.getter(beanClass, fields[0]).invoke(bean);
                 pstm.setObject(1, value);
             } catch (ReflectiveOperationException e) {
                 throw new DBException(e);
@@ -302,67 +302,6 @@ public class GenericDAO<B> implements DataAccessObject<B> {
             return executeUpdate;
         } catch (DBException | SQLException e) {
             throw new DBException(e);
-        }
-    }
-
-    /**
-     * Create a new Bean Instance
-     *
-     * @return B
-     * @throws java.lang.ReflectiveOperationException
-     */
-    private B createBean() throws ReflectiveOperationException {
-        try {
-            return (B) beanClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException ex) {
-            throw new ReflectiveOperationException(ex);
-        }
-    }
-
-    /**
-     * Get the appropriate bean Setter method
-     *
-     * @param field
-     * @return Method
-     * @throws java.lang.ReflectiveOperationException
-     */
-    private Method getSetter(Field field) throws ReflectiveOperationException {
-        try {
-            return beanClass.getMethod("set" + TextX.capitalize(field.getName()), field.getType());
-        } catch (NoSuchMethodException | SecurityException ex) {
-            throw new ReflectiveOperationException(ex);
-        }
-    }
-
-    /**
-     * Get the appropriate bean Getter method
-     *
-     * @param field
-     * @return Method
-     * @throws java.lang.ReflectiveOperationException
-     */
-    private Method getGetter(Field field) throws ReflectiveOperationException {
-        try {
-            Class<?> type = field.getType();
-            String prefix = type.equals(Boolean.class) ? "is" : "get";
-            return beanClass.getMethod(prefix + TextX.capitalize(field.getName()));
-        } catch (NoSuchMethodException | SecurityException ex) {
-            throw new ReflectiveOperationException(ex);
-        }
-    }
-
-    /**
-     * Get the ResultSet appropriate Getter method
-     *
-     * @param field
-     * @return Method
-     * @throws ReflectiveOperationException
-     */
-    private Method getGetterFromRs(Field field) throws ReflectiveOperationException {
-        try {
-            return ResultSet.class.getMethod("get" + TextX.capitalize(field.getType().getSimpleName()), int.class);
-        } catch (NoSuchMethodException | SecurityException ex) {
-            throw new ReflectiveOperationException(ex);
         }
     }
 
