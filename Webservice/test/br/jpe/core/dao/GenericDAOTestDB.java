@@ -9,46 +9,15 @@ import br.jpe.core.dao.testing.TestBean;
 import br.jpe.core.database.connection.Connection;
 import br.jpe.core.database.ConnectionFactory;
 import br.jpe.core.database.DBException;
-import java.sql.SQLException;
 import java.util.List;
-import org.junit.AfterClass;
 import static org.junit.Assert.*;
-import org.junit.BeforeClass;
 
 /**
  * GenericDAO Test class
  *
  * @author joaovperin
  */
-public class GenericDAOTest {
-
-    /**
-     * Setup database before executing the tests
-     *
-     * @throws DBException
-     * @throws SQLException
-     */
-    @BeforeClass
-    public static void setUpDatabase() throws DBException, SQLException {
-        try (Connection conn = ConnectionFactory.transaction()) {
-            DBUtils.createTestDB(conn);
-            conn.commit();
-        }
-    }
-
-    /**
-     * Cleans up database after the tests
-     *
-     * @throws DBException
-     * @throws SQLException
-     */
-    @AfterClass
-    public static void cleanUpDatabase() throws DBException, SQLException {
-        try (Connection conn = ConnectionFactory.transaction()) {
-            DBUtils.deleteTestDB(conn);
-            conn.commit();
-        }
-    }
+public class GenericDAOTestDB {
 
     /**
      * Tests the select method
@@ -215,7 +184,7 @@ public class GenericDAOTest {
             dao.delete(obj);
             // Asserts it will return an object equal
             List<TestBean> list = dao.select();
-            assertTrue(list.isEmpty());
+            assertFalse(list.contains(obj));
         }
     }
 

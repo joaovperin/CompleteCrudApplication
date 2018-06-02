@@ -281,6 +281,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @return long
      * @throws DBException
      */
+    @Override
     public long deleteAll() throws DBException {
         return deleteAll(new GenericFilter());
     }
@@ -293,6 +294,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @return long
      * @throws DBException
      */
+    @Override
     public long deleteAll(Filter filter) throws DBException {
         try (PreparedStatement pstm = conn.prepareStmt(sql.buildDeleteStmt().concat(sql.buildWhereStmt(filter)))) {
             // Executes the update

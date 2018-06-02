@@ -12,7 +12,8 @@ package br.jpe.core.dao;
  */
 public enum FilterCondition {
 
-    EQUAL("=");
+    EQUAL("="),
+    NOT_EQUAL("!=");
 
     /** SQL */
     private final String sql;

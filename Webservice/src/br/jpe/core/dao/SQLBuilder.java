@@ -106,8 +106,8 @@ public class SQLBuilder {
     public final String buildWhereStmt() {
         // First field is the primary key
         Field[] fields = beanClass.getDeclaredFields();
-        return new StringBuilder(256).append(" WHERE ").
-                append(String.format(" %s ", fields[0].getName())).
+        return new StringBuilder(256).append(" WHERE").
+                append(String.format(" %s", fields[0].getName())).
                 append(" = ?").
                 toString();
     }
