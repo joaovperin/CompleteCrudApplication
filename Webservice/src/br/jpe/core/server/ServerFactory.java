@@ -5,6 +5,7 @@
  */
 package br.jpe.core.server;
 
+import br.jpe.core.server.impl.TomcatServer;
 import br.jpe.core.config.OptionsParser;
 
 /**

@@ -3,17 +3,22 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core.server;
+package br.jpe.core.server.impl;
 
+import br.jpe.core.server.AbstractServer;
 import br.jpe.core.utils.FileX;
 import java.io.File;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
+import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 
 /**
  * TomcatServer implementation
@@ -77,9 +82,35 @@ public class TomcatServer extends AbstractServer {
             WebResourceRoot resources = new StandardRoot(ctx);
             resources.addPreResources(new DirResourceSet(resources, CLASSES, ADD_INFO.getAbsolutePath(), "/"));
             ctx.setResources(resources);
+
+            // TODO: Make this Works:
+            // addFilter(ctx, MainFilter.class, "/", DispatcherType.REQUEST); 
+            
         } catch (ServletException e) {
             e.printStackTrace(System.out);
         }
+    }
+
+    /**
+     * Adds a filter for tomcat
+     *
+     * @param ctx
+     * @param f
+     * @param urlPattern
+     * @param types
+     */
+    private void addFilter(Context ctx, Class f, String urlPattern, DispatcherType... types) {
+        FilterDef def = new FilterDef();
+        def.setFilterName(f.getClass().getSimpleName());
+        def.setFilterClass(f.getClass().getCanonicalName());
+        FilterMap map = new FilterMap();
+        map.addURLPattern(urlPattern);
+        map.setFilterName(f.getClass().getSimpleName());
+        for (DispatcherType t : types) {
+            map.setDispatcher(t.name());
+        }
+        ctx.addFilterDef(def);
+        ctx.addFilterMap(map);
     }
 
     /**
