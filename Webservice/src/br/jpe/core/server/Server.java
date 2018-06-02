@@ -5,8 +5,6 @@
  */
 package br.jpe.core.server;
 
-import br.jpe.core.Options;
-
 /**
  * A Server interface
  *
@@ -19,7 +17,7 @@ public interface Server {
      *
      * @param options
      */
-    public void setOptions(Options options);
+    public void setOptions(ServerOptions options);
 
     /**
      * Users the stored options (or the defaults) to configure the server

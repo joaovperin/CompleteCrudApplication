@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core;
+package br.jpe.core.config;
 
 import java.util.Arrays;
 
@@ -22,13 +22,23 @@ public class OptionsParser {
     private static final String SEPARATOR = "=";
 
     /**
-     * Parsers a String array into an Options object
+     * Parsers a String array into a new Options object
      *
      * @param commandLineArgs
      * @return Options
      */
     public static Options parse(String[] commandLineArgs) {
-        Options options = new Options();
+        return parse(commandLineArgs, new GenericOptions());
+    }
+
+    /**
+     * Parsers a String array into an Options object
+     *
+     * @param commandLineArgs
+     * @param options
+     * @return Options
+     */
+    public static Options parse(String[] commandLineArgs, Options options) {
         Arrays.asList(commandLineArgs).stream().filter((str) -> {
             return isValidArgument(str);
         }).map((a) -> {

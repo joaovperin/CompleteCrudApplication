@@ -3,18 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core;
+package br.jpe.core.config;
 
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Options object
+ * A Generic options object
  *
  * @author joaovperin
  */
-public final class Options {
+public class GenericOptions implements Options {
 
     /** Map with the options */
     private final Map<String, String> options;
@@ -24,7 +24,7 @@ public final class Options {
     /**
      * Default constructor
      */
-    public Options() {
+    public GenericOptions() {
         this.options = new HashMap<>();
     }
 
@@ -34,7 +34,8 @@ public final class Options {
      * @param key
      * @param value
      */
-    public void put(String key, String value) {
+    @Override
+    public final void put(String key, String value) {
         String entry = options.get(key);
         if (entry == null) {
             options.put(key, value);
@@ -48,7 +49,8 @@ public final class Options {
      * @param defaultValue
      * @return String
      */
-    public String get(String key, String defaultValue) {
+    @Override
+    public final String get(String key, String defaultValue) {
         String value = options.get(key);
         if (value != null) {
             String trim = value.trim();
@@ -64,6 +66,7 @@ public final class Options {
      *
      * @param printStream
      */
+    @Override
     public final void printAll(PrintStream printStream) {
         options.entrySet().forEach((set) -> {
             printStream.println(new StringBuilder().

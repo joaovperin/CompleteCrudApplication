@@ -71,7 +71,7 @@ public class TomcatServer extends AbstractServer {
         try {
             // Instantiate Tomcat and configure the port
             this.tomcat = new Tomcat();
-            tomcat.setPort(Integer.valueOf(options.get("port", "8085")));
+            tomcat.setPort(options.getPort());
             // Configures the context
             StandardContext ctx = (StandardContext) tomcat.addWebapp("", WEB_APPS);
             WebResourceRoot resources = new StandardRoot(ctx);

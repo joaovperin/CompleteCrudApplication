@@ -16,7 +16,7 @@ import br.jpe.core.server.ServerFactory;
 public class Main {
 
     /**
-     * Runs the app
+     * Create, configure and runs the Server
      *
      * @param args
      */

@@ -5,8 +5,6 @@
  */
 package br.jpe.core.server;
 
-import br.jpe.core.Options;
-
 /**
  * Abstraction of a server
  *
@@ -15,13 +13,13 @@ import br.jpe.core.Options;
 public abstract class AbstractServer implements Server {
 
     /** Server options */
-    protected Options options;
+    protected ServerOptions options;
 
     /**
      * Default Constructor
      */
     public AbstractServer() {
-        this.options = new Options();
+        this.options = new ServerOptions();
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
@@ -31,7 +29,7 @@ public abstract class AbstractServer implements Server {
      * @param options
      */
     @Override
-    public void setOptions(Options options) {
+    public void setOptions(ServerOptions options) {
         this.options = options;
     }
 

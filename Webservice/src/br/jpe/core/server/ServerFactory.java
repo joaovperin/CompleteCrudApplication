@@ -5,8 +5,7 @@
  */
 package br.jpe.core.server;
 
-import br.jpe.core.Options;
-import br.jpe.core.OptionsParser;
+import br.jpe.core.config.OptionsParser;
 
 /**
  * A Factory to help with server instantiation
@@ -16,7 +15,7 @@ import br.jpe.core.OptionsParser;
 public final class ServerFactory {
 
     /** Server options */
-    private final Options options;
+    private final ServerOptions options;
 
     /**
      * Constructor that builds the options using command line arguments
@@ -24,7 +23,7 @@ public final class ServerFactory {
      * @param commandLineArgs
      */
     public ServerFactory(String[] commandLineArgs) {
-        this.options = OptionsParser.parse(getArgsOrDefaults(commandLineArgs));
+        this.options = (ServerOptions) OptionsParser.parse(getArgsOrDefaults(commandLineArgs), new ServerOptions());
     }
 
     /**
