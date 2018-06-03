@@ -3,14 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.servlet;
+package br.jpe.core.servlet;
 
+import br.jpe.controller.TestController;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -34,7 +34,7 @@ public class MainFilter implements Filter {
     private static final String VERSION = "0.0.1-SNAPSHOT";
 
     /** Filters map */
-    private final Map<Pattern, Filter> filters = new LinkedHashMap<>();
+    private final Map<Pattern, ControllerClass> controllers = new LinkedHashMap<>();
 
     /**
      * Initializes the filter
@@ -45,9 +45,9 @@ public class MainFilter implements Filter {
     @Override
     public void init(FilterConfig cfg) throws ServletException {
         System.out.printf("*** Initializing filter Version %s\n", VERSION);
-        Filter f1 = new DummyFilter();
-        f1.init(cfg);
-        filters.put(new Pattern("/foo/*"), f1);
+        // Controller class
+        ControllerClass c = new TestController();
+        controllers.put(c.getPattern(), c);
     }
 
     /**
@@ -72,14 +72,28 @@ public class MainFilter implements Filter {
         // Cut's the request path
         String path = req.getRequestURI().substring(req.getContextPath().length());
         // Creates a GodChain filter chain with all the matching filters
-        MainFilterChain godChain = new MainFilterChain(chain);
-        filters.entrySet().stream().filter((entry) -> {
+        MainFilterChain execChain = new MainFilterChain(chain);
+        // All Controllers
+        controllers.entrySet().stream().filter((entry) -> {
             return entry.getKey().matches(path);
-        }).forEachOrdered((entry) -> {
-            godChain.addFilter(entry.getValue());
+        }).forEachOrdered((Map.Entry<Pattern, ControllerClass> entry) -> {
+            // Get methods that match
+            Stream stream = entry.getValue().getMethodsThatMatch(path).stream();
+            stream.forEachOrdered(new Consumer<ControllerMethod>() {
+                @Override
+                public void accept(ControllerMethod m) {
+                    execChain.add((HttpServletRequest rq1, HttpServletResponse res1) -> {
+                        m.exec(rq1, res1);
+                    });
+                }
+            });
         });
         // Executes the Chain
-        godChain.doFilter(req, res);
+        try {
+            execChain.start(req, res);
+        } catch (Exception ex) {
+            throw new ServletException(ex);
+        }
     }
 
     /**
@@ -91,52 +105,12 @@ public class MainFilter implements Filter {
     }
 
     /**
-     * URL Pattern
-     */
-    private class Pattern {
-
-        /** Position of the URL */
-        private final int position;
-        /** Full URL */
-        private final String url;
-
-        /**
-         * Constructor
-         *
-         * @param url
-         */
-        public Pattern(String url) {
-            this.url = url.replaceAll("/?\\*", "");
-            this.position = url.startsWith("*") ? 1
-                    : url.endsWith("*") ? -1
-                    : 0;
-        }
-
-        /**
-         * Returns true if the URL path matches with the specified url
-         *
-         * @param path
-         * @return boolean
-         */
-        public boolean matches(String path) {
-            return (position == -1) ? path.startsWith(url)
-                    : (position == 1) ? path.endsWith(url)
-                            : path.equals(url);
-        }
-
-    }
-
-    /**
      * A Filter chain for the Main Filter
      */
-    public class MainFilterChain implements FilterChain {
+    public class MainFilterChain extends HttpChain {
 
         /** Filter Chain */
         private final FilterChain chain;
-        /** List of filters */
-        private final List<Filter> filters = new ArrayList<>();
-        /** Iterator for the filters */
-        private Iterator<Filter> iterator;
 
         /**
          * Constructor
@@ -148,7 +122,7 @@ public class MainFilter implements Filter {
         }
 
         /**
-         * Do the filter logic
+         * Called on finish
          *
          * @param request
          * @param response
@@ -156,29 +130,8 @@ public class MainFilter implements Filter {
          * @throws ServletException
          */
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException {
-            // Start of the chain
-            if (iterator == null) {
-                iterator = filters.iterator();
-            }
-            // Procces with the next filter or continue with the main filter chain
-            if (iterator.hasNext()) {
-                iterator.next().doFilter(request, response, this);
-            } else {
-                chain.doFilter(request, response);
-            }
-        }
-
-        /**
-         * Adds a filter to the list
-         *
-         * @param filter
-         */
-        public void addFilter(Filter filter) {
-            if (iterator != null) {
-                throw new IllegalStateException("Cannot add filters after calling doFilter");
-            }
-            filters.add(filter);
+        public void finish(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            chain.doFilter(request, response);
         }
 
     }
