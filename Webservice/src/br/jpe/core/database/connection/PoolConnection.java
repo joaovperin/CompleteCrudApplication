@@ -20,6 +20,11 @@ public interface PoolConnection extends Connection {
     public boolean isFree();
 
     /**
+     * Indicates a connection is busy and cannot be used
+     */
+    public void busy();
+
+    /**
      * Free a connection to be used
      */
     public void free();

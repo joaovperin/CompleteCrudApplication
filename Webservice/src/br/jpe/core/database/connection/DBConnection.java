@@ -6,7 +6,6 @@
 package br.jpe.core.database.connection;
 
 import br.jpe.core.database.DBException;
-import br.jpe.core.database.connection.PoolConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -20,7 +19,7 @@ import java.sql.Statement;
 public class DBConnection implements PoolConnection {
 
     /** JDBC wrapped connection object */
-    private final Connection conn;
+    private final java.sql.Connection jdbcConn;
     /** An indicator if the connection is a transaction or a read-only one */
     private final boolean readOnly;
     /** A flag to control if the connection is free to use */
@@ -43,8 +42,8 @@ public class DBConnection implements PoolConnection {
      * @param conn
      * @param readOnly
      */
-    public DBConnection(Connection conn, boolean readOnly) {
-        this.conn = conn;
+    public DBConnection(java.sql.Connection conn, boolean readOnly) {
+        this.jdbcConn = conn;
         this.readOnly = readOnly;
         this.free = true;
         this.commited = false;
@@ -59,8 +58,8 @@ public class DBConnection implements PoolConnection {
     @Override
     public Statement createStmt() throws DBException {
         try {
-            this.free = false;
-            return conn.createStatement();
+            busy();
+            return jdbcConn.createStatement();
         } catch (SQLException ex) {
             throw new DBException(ex);
         }
@@ -75,11 +74,19 @@ public class DBConnection implements PoolConnection {
     @Override
     public PreparedStatement prepareStmt(String sql) throws DBException {
         try {
-            this.free = false;
-            return conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            busy();
+            return jdbcConn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         } catch (SQLException ex) {
             throw new DBException(ex);
         }
+    }
+
+    /**
+     * Indicates a connection is busy and cannot be used
+     */
+    @Override
+    public void busy() {
+        this.free = false;
     }
 
     /**
@@ -112,7 +119,7 @@ public class DBConnection implements PoolConnection {
             return;
         }
         try {
-            conn.commit();
+            jdbcConn.commit();
             commited = true;
         } catch (SQLException e) {
             throw new DBException("Failed to commit!", e);
@@ -129,7 +136,7 @@ public class DBConnection implements PoolConnection {
             return;
         }
         try {
-            conn.rollback();
+            jdbcConn.rollback();
         } catch (SQLException ex) {
             System.out.println("*** Failed to rollback.");
         }
@@ -140,12 +147,12 @@ public class DBConnection implements PoolConnection {
      */
     @Override
     public void close() {
-        // If is a ready-only connection, just mark it as free and not close that.
+        // If is a ready-only connection, just free that (without closing).
         if (readOnly) {
-            this.free = true;
+            free();
             return;
         }
-        // If it's a transaction connection and it hasn't been commited yet, 
+        // If it's a transaction connection and it hasn't been commited yet,
         //...call rollback, so we can use try-with-resources.
         if (!commited) {
             rollback();
@@ -159,7 +166,7 @@ public class DBConnection implements PoolConnection {
     @Override
     public final void jdbcClose() {
         try {
-            conn.close();
+            jdbcConn.close();
         } catch (SQLException ex) {
             System.out.println("*** Failed to close.");
         }

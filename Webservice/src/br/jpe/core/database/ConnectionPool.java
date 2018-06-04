@@ -38,7 +38,7 @@ public final class ConnectionPool {
      * @param conn
      * @throws DBException
      */
-    public void addConnection(PoolConnection conn) throws DBException {
+    public synchronized void addConnection(PoolConnection conn) throws DBException {
         if (conexoes.size() >= properties.getMaxConnections()) {
             throw new DBException("Pool is full!");
         }
@@ -69,10 +69,15 @@ public final class ConnectionPool {
         if (++tries > properties.getMaxTries()) {
             throw new DBException("Failed to create a new Connection after " + properties.getMaxTries() + " tries.");
         }
-        // Try to get a free connection on the pool
-        Optional<PoolConnection> opt = conexoes.stream().filter((c) -> c.isFree()).findFirst();
-        if (opt.isPresent()) {
-            return opt.get();
+        // Synchronizes the connection list
+        synchronized (conexoes) {
+            // Try to get a free connection on the pool
+            Optional<PoolConnection> opt = conexoes.stream().filter(PoolConnection::isFree).findFirst();
+            if (opt.isPresent()) {
+                PoolConnection conn = opt.get();
+                conn.busy();
+                return conn;
+            }
         }
         // If it's not full and it don't have any free connections, throws an EmptyPoolException so the caller can create one
         if (conexoes.size() < properties.getMaxConnections()) {
