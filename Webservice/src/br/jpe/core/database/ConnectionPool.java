@@ -24,8 +24,6 @@ public final class ConnectionPool {
 
     /** List of pool connections */
     private final List<PoolConnection> conexoes;
-    /** Internal variable to store connection tries */
-    private int tries = 0;
 
     /**
      * Private constructor
@@ -51,11 +49,11 @@ public final class ConnectionPool {
      * Returns a connection of the pool
      *
      * @return ConexaoPool
-     * @throws EmptyPoolException
+     * @throws br.jpe.core.database.DBException An error occurred
+     * @throws EmptyPoolException The pool is empty and you need to provide connections for that
      */
-    public PoolConnection getConnection() throws EmptyPoolException {
-        tries = 0;
-        PoolConnection conn = getPoolConnection();
+    public PoolConnection getConnection() throws EmptyPoolException, DBException {
+        PoolConnection conn = getPoolConnection(0);
         return conn;
     }
 
@@ -63,12 +61,13 @@ public final class ConnectionPool {
      * Returns a connection from the pool, with all the logic
      *
      * @return ConexaoPool
-     * @throws EmptyPoolException
+     * @throws DBException An error occurred
+     * @throws EmptyPoolException The pool is empty and you need to provide connections for that
      */
-    private PoolConnection getPoolConnection() throws EmptyPoolException {
+    private PoolConnection getPoolConnection(int tries) throws EmptyPoolException, DBException {
         // Recursive protection for not entering in infinite loop
         if (++tries > properties.getMaxTries()) {
-            throw new RuntimeException("Failed to create a new Connection after " + properties.getMaxTries() + " tries.");
+            throw new DBException("Failed to create a new Connection after " + properties.getMaxTries() + " tries.");
         }
         // Try to get a free connection on the pool
         Optional<PoolConnection> opt = conexoes.stream().filter((c) -> c.isFree()).findFirst();
@@ -84,7 +83,7 @@ public final class ConnectionPool {
             Thread.sleep(properties.getAwaitingTime());
         } catch (InterruptedException ex) {
         }
-        return getPoolConnection();
+        return getPoolConnection(tries);
     }
 
     /**
