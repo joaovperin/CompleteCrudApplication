@@ -30,7 +30,7 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void getConnection() throws DBException, SQLException {
-        ResultSet rs = ConnectionFactory.query().createStmt().executeQuery("SELECT '1' FROM DUAL;");
+        ResultSet rs = ((SQLConnection) ConnectionFactory.query()).createStmt().executeQuery("SELECT '1' FROM DUAL;");
         String res = null;
         if (rs.next()) {
             res = rs.getString(1);
@@ -48,7 +48,7 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void showTables() throws Exception {
-        ResultSet rs = ConnectionFactory.query().createStmt().executeQuery("Show Tables;");
+        ResultSet rs = ((SQLConnection) ConnectionFactory.query()).createStmt().executeQuery("Show Tables;");
         List<String> tables = new ArrayList<>();
         while (rs.next()) {
             tables.add(rs.getString(1));
@@ -72,7 +72,7 @@ public class ConexaoFactoryTest {
         c1.createStmt();
         c1.free();
 
-        SQLConnection c2 = ConnectionFactory.query();
+        SQLConnection c2 = (SQLConnection) ConnectionFactory.query();
         c2.createStmt();
         // The same reference
         assertTrue(c1.equals(c2));
@@ -86,7 +86,7 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void poolCreationTest() throws DBException, SQLException {
-        SQLConnection c1 = ConnectionFactory.query();
+        SQLConnection c1 = (SQLConnection) ConnectionFactory.query();
         c1.createStmt();
 
         PoolConnection c2 = (PoolConnection) ConnectionFactory.query();
@@ -112,20 +112,20 @@ public class ConexaoFactoryTest {
         int e1 = 0;
         int e2 = 0;
         int e3 = 0;
-        try (SQLConnection c1 = ConnectionFactory.query()) {
-            ResultSet rs1 = c1.createStmt().executeQuery("SELECT '1' FROM DUAL;");
+        try (Connection c1 = ConnectionFactory.query()) {
+            ResultSet rs1 = ((SQLConnection) c1).createStmt().executeQuery("SELECT '1' FROM DUAL;");
             if (rs1.next()) {
                 e1 = rs1.getInt(1);
             }
-            try (SQLConnection c2 = ConnectionFactory.query()) {
-                ResultSet rs2 = c2.createStmt().executeQuery("SELECT '2' FROM DUAL;");
+            try (Connection c2 = ConnectionFactory.query()) {
+                ResultSet rs2 = ((SQLConnection) c2).createStmt().executeQuery("SELECT '2' FROM DUAL;");
                 if (rs2.next()) {
                     e2 = rs2.getInt(1);
                 }
             }
         }
-        try (SQLConnection c3 = ConnectionFactory.query()) {
-            ResultSet rs3 = c3.createStmt().executeQuery("SELECT '3' FROM DUAL;");
+        try (Connection c3 = ConnectionFactory.query()) {
+            ResultSet rs3 = ((SQLConnection) c3).createStmt().executeQuery("SELECT '3' FROM DUAL;");
             if (rs3.next()) {
                 e3 = rs3.getInt(1);
             }

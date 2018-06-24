@@ -36,4 +36,24 @@ public enum DatabaseType {
         return valueName;
     }
 
+    /**
+     * Returns the database type
+     *
+     * @param name
+     * @return DatabaseType
+     */
+    public static DatabaseType forName(String name) {
+        // Defaults to SQL
+        if (name == null || name.trim().isEmpty()) {
+            return DatabaseType.SQL;
+        }
+        // Serch on the enum values
+        for (DatabaseType type : values()) {
+            if (type.valueName().equalsIgnoreCase(name)) {
+                return type;
+            }
+        }
+        throw new UnsupportedOperationException("DatabaseType '" + name + "' not supported (yet).");
+    }
+
 }

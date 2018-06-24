@@ -5,11 +5,10 @@
  */
 package br.jpe.core.database.sql;
 
-import br.jpe.core.database.DBException;
 import br.jpe.core.database.Connection;
+import br.jpe.core.database.DBException;
 import br.jpe.core.database.sql.connection.DBConnection;
 import br.jpe.core.database.sql.connection.PoolConnection;
-import br.jpe.core.database.sql.connection.SQLConnection;
 import com.mysql.jdbc.AbandonedConnectionCleanupThread;
 import java.io.IOException;
 import java.sql.Driver;
@@ -17,6 +16,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Enumeration;
 import java.util.Properties;
+
+import br.jpe.core.database.DatabaseType;
+import br.jpe.core.database.JsonConnection;
 
 /**
  * A factory for database connections
@@ -26,15 +28,19 @@ import java.util.Properties;
 public final class ConnectionFactory {
 
     /** Connection properties */
-    private static final Properties CONN_PTS;
+    private static final Properties CONN_PTS = new Properties();
     /** Database Connection */
-    private static final Properties APP_PTS;
+    private static final Properties APP_PTS = new Properties();
+    /** Database Type */
+    private static final DatabaseType DB_TYPE;
+
+    private static Connection jsonConn;
 
     static {
         // Static constructor to load properties and register driver
-        APP_PTS = new Properties();
-        CONN_PTS = new Properties();
         loadProperties();
+        // Database type
+        DB_TYPE = DatabaseType.forName(APP_PTS.getProperty("db.type"));
         registerDriver();
         // Add's a shutdown hook to deregister the driver
         Runtime.getRuntime().addShutdownHook(new Thread(ConnectionFactory::onFinish));
@@ -51,9 +57,16 @@ public final class ConnectionFactory {
      * Returns a ReadOnly Connection
      *
      * @return Connection
-     * @throws br.jpe.core.database.sql.DBException
+     * @throws br.jpe.core.database.DBException
      */
-    public static SQLConnection query() throws DBException {
+    public static Connection query() throws DBException {
+        // If it's not a SQL Db
+        if (!DB_TYPE.equals(DatabaseType.SQL)) {
+            if (jsonConn == null) {
+                jsonConn = new JsonConnection();
+            }
+            return jsonConn;
+        }
         PoolConnection conn = null;
         ConnectionPool pool = ConnectionPool.get();
         try {
@@ -76,9 +89,16 @@ public final class ConnectionFactory {
      * Returns a Transaction Connection
      *
      * @return Connection
-     * @throws br.jpe.core.database.sql.DBException
+     * @throws br.jpe.core.database.DBException
      */
-    public static SQLConnection transaction() throws DBException {
+    public static Connection transaction() throws DBException {
+        // If it's not a SQL Db
+        if (!DB_TYPE.equals(DatabaseType.SQL)) {
+            if (jsonConn == null) {
+                jsonConn = new JsonConnection();
+            }
+            return jsonConn;
+        }
         java.sql.Connection conn = null;
         try {
             conn = getJdbcConn();
@@ -122,10 +142,12 @@ public final class ConnectionFactory {
      * Register the MySQL/Jdbc Driver
      */
     private static void registerDriver() {
-        try {
-            Class.forName(APP_PTS.getProperty("db.driver"));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Failed to register JDBC/Mysql Driver!", e);
+        if (DB_TYPE.equals(DatabaseType.SQL)) {
+            try {
+                Class.forName(APP_PTS.getProperty("db.driver"));
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Failed to register JDBC/Mysql Driver!", e);
+            }
         }
     }
 
@@ -133,6 +155,10 @@ public final class ConnectionFactory {
      * Does all the stuff to finish the application
      */
     private static void onFinish() {
+        // Only do this for SQL Db's
+        if (!DB_TYPE.equals(DatabaseType.SQL)) {
+            return;
+        }
         // Deregister the MySQL/Jdbc Driver
         Enumeration<Driver> drivers = DriverManager.getDrivers();
         while (drivers.hasMoreElements()) {

@@ -6,6 +6,7 @@
 package br.jpe.core.dao;
 
 import br.jpe.core.dao.testing.TestBean;
+import br.jpe.core.database.Connection;
 import br.jpe.core.database.sql.ConnectionFactory;
 import br.jpe.core.database.DBException;
 import br.jpe.core.database.sql.connection.SQLConnection;
@@ -27,8 +28,8 @@ public class GenericDAOTestDB {
     @org.junit.Test
     public void testSelect() throws DBException {
         TestBean bean = new TestBean(1, "foo");
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
-            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>((SQLConnection) conn, TestBean.class);
             dao.insert(bean);
 
             List<TestBean> list = dao.findAll();
@@ -44,8 +45,8 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testSelectWithFilters() throws DBException {
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
-            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>((SQLConnection) conn, TestBean.class);
             // Inserts some dummy temporary data (it will rollback after)
             dao.insert(new TestBean(11, "foo"));
             dao.insert(new TestBean(12, "bar"));
@@ -98,10 +99,10 @@ public class GenericDAOTestDB {
     @org.junit.Test
     public void testInsert() throws DBException {
         TestBean obj = new TestBean();
-        try (SQLConnection cn = ConnectionFactory.transaction()) {
+        try (Connection cn = ConnectionFactory.transaction()) {
             obj.setKeyy(0);
             obj.setValuee("useless name here");
-            new GenericDAO<>(cn, TestBean.class).insert(obj);
+            new GenericDAO<>((SQLConnection) cn, TestBean.class).insert(obj);
         }
         // Asserts it will get the auto-incremented key
         assertNotEquals(0, obj.keyy);
@@ -114,8 +115,8 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testUpdate() throws DBException {
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
-            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>((SQLConnection) conn, TestBean.class);
 
             final int code = 39;
             // Inserts a dummy testing record with code 39
@@ -147,8 +148,8 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testUpdateAll() throws DBException {
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
-            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>((SQLConnection) conn, TestBean.class);
 
             dao.insert(new TestBean(3, "haha"));
             dao.insert(new TestBean(4, "hehe"));
@@ -177,10 +178,10 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testDelete() throws DBException {
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
+        try (Connection conn = ConnectionFactory.transaction()) {
             TestBean obj = new TestBean();
             obj.keyy = 1;
-            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+            GenericDAO<TestBean> dao = new GenericDAO<>((SQLConnection) conn, TestBean.class);
             dao.delete(obj);
             // Asserts it will return an object equal
             List<TestBean> list = dao.findAll();
@@ -195,8 +196,8 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testDeleteAll() throws DBException {
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
-            GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
+        try (Connection conn = ConnectionFactory.transaction()) {
+            GenericDAO<TestBean> dao = new GenericDAO<>((SQLConnection) conn, TestBean.class);
             // Cleans up the database
             dao.deleteAll();
 

@@ -6,7 +6,6 @@
 package br.jpe.core.server;
 
 import br.jpe.core.config.GenericOptions;
-import br.jpe.core.database.DatabaseType;
 
 /**
  * Server Options
@@ -17,8 +16,6 @@ public class ServerOptions extends GenericOptions {
 
     /** Port attribute name */
     private static final String PORT = "port";
-    /** Database Type attribute name */
-    private static final String DATABASE_TYPE = "dbtype";
 
     /**
      * Gets the port
@@ -27,15 +24,6 @@ public class ServerOptions extends GenericOptions {
      */
     public int getPort() {
         return Integer.valueOf(get(PORT, "8085"));
-    }
-
-    /**
-     * Gets the database type
-     *
-     * @return json
-     */
-    public DatabaseType getDatabaseType() {
-        return DatabaseType.valueOf(get(DATABASE_TYPE, DatabaseType.SQL.valueName()));
     }
 
     /**

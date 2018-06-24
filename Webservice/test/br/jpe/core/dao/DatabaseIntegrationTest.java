@@ -5,6 +5,7 @@ package br.jpe.core.dao;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+import br.jpe.core.database.Connection;
 import br.jpe.core.database.sql.ConnectionFactory;
 import br.jpe.core.database.DBException;
 import br.jpe.core.database.sql.connection.SQLConnection;
@@ -48,8 +49,8 @@ public class DatabaseIntegrationTest {
      */
     private void setUpDatabase() throws DBException {
         print("Setting UP Database...");
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
-            DBUtils.createTestDB(conn);
+        try (Connection conn = ConnectionFactory.transaction()) {
+            DBUtils.createTestDB((SQLConnection) conn);
             conn.commit();
         }
         print("Setting UP Database Completed.");
@@ -62,8 +63,8 @@ public class DatabaseIntegrationTest {
      */
     private void cleanUpDatabase() throws DBException {
         print("Cleaning up Database...");
-        try (SQLConnection conn = ConnectionFactory.transaction()) {
-            DBUtils.deleteTestDB(conn);
+        try (Connection conn = ConnectionFactory.transaction()) {
+            DBUtils.deleteTestDB((SQLConnection) conn);
             conn.commit();
         }
         print("Cleaning up Database Completed.");
