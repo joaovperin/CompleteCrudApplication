@@ -25,7 +25,16 @@ public class GenericOptions implements Options {
      * Default constructor
      */
     public GenericOptions() {
-        this.options = new HashMap<>();
+        this(new HashMap<>());
+    }
+
+    /**
+     * Constructor
+     *
+     * @param options
+     */
+    private GenericOptions(Map<String, String> options) {
+        this.options = options;
     }
 
     /**
@@ -75,6 +84,17 @@ public class GenericOptions implements Options {
                     append(set.getValue()).
                     append('\n'));
         });
+    }
+
+    /**
+     * Copies the object
+     *
+     * @return GenericOptios
+     */
+    public GenericOptions copy() {
+        Map<String, String> newOptions = new HashMap<>();
+        options.entrySet().forEach((set) -> newOptions.put(set.getKey(), set.getValue()));
+        return new GenericOptions(newOptions);
     }
 
 }

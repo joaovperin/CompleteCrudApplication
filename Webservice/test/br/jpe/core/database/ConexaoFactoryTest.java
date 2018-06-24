@@ -5,8 +5,9 @@
  */
 package br.jpe.core.database;
 
-import br.jpe.core.database.connection.Connection;
-import br.jpe.core.database.connection.PoolConnection;
+import br.jpe.core.database.sql.ConnectionFactory;
+import br.jpe.core.database.sql.connection.PoolConnection;
+import br.jpe.core.database.sql.connection.SQLConnection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -71,7 +72,7 @@ public class ConexaoFactoryTest {
         c1.createStmt();
         c1.free();
 
-        Connection c2 = ConnectionFactory.query();
+        SQLConnection c2 = ConnectionFactory.query();
         c2.createStmt();
         // The same reference
         assertTrue(c1.equals(c2));
@@ -85,7 +86,7 @@ public class ConexaoFactoryTest {
      */
     @Test
     public void poolCreationTest() throws DBException, SQLException {
-        Connection c1 = ConnectionFactory.query();
+        SQLConnection c1 = ConnectionFactory.query();
         c1.createStmt();
 
         PoolConnection c2 = (PoolConnection) ConnectionFactory.query();
@@ -111,19 +112,19 @@ public class ConexaoFactoryTest {
         int e1 = 0;
         int e2 = 0;
         int e3 = 0;
-        try (Connection c1 = ConnectionFactory.query()) {
+        try (SQLConnection c1 = ConnectionFactory.query()) {
             ResultSet rs1 = c1.createStmt().executeQuery("SELECT '1' FROM DUAL;");
             if (rs1.next()) {
                 e1 = rs1.getInt(1);
             }
-            try (Connection c2 = ConnectionFactory.query()) {
+            try (SQLConnection c2 = ConnectionFactory.query()) {
                 ResultSet rs2 = c2.createStmt().executeQuery("SELECT '2' FROM DUAL;");
                 if (rs2.next()) {
                     e2 = rs2.getInt(1);
                 }
             }
         }
-        try (Connection c3 = ConnectionFactory.query()) {
+        try (SQLConnection c3 = ConnectionFactory.query()) {
             ResultSet rs3 = c3.createStmt().executeQuery("SELECT '3' FROM DUAL;");
             if (rs3.next()) {
                 e3 = rs3.getInt(1);

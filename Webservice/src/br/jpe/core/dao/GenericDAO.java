@@ -13,10 +13,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import br.jpe.core.database.connection.Connection;
 import br.jpe.core.utils.ReflectionX;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import br.jpe.core.database.sql.connection.SQLConnection;
 
 /**
  * A Generic Data Access Object
@@ -31,7 +31,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
     /** SQL Builder object */
     private final SQLBuilder sql;
     /** Connection to the database */
-    protected final Connection conn;
+    protected final SQLConnection conn;
 
     /**
      * Constructor that receives the connection
@@ -39,7 +39,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @param conn
      * @param beanClass
      */
-    public GenericDAO(Connection conn, Class<B> beanClass) {
+    public GenericDAO(SQLConnection conn, Class<B> beanClass) {
         this.beanClass = beanClass;
         this.sql = new SQLBuilder(beanClass);
         this.conn = Objects.requireNonNull(conn, "A valid connection is needed.");
@@ -52,7 +52,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @throws DBException
      */
     @Override
-    public List<B> select() throws DBException {
+    public List<B> findAll() throws DBException {
         List<B> list = new ArrayList<>();
         try (Statement stm = conn.createStmt()) {
             try (ResultSet rs = stm.executeQuery(sql.buildSelectStmt())) {
@@ -87,7 +87,7 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @throws DBException
      */
     @Override
-    public List<B> select(Filter filter) throws DBException {
+    public List<B> findAll(Filter filter) throws DBException {
         List<B> list = new ArrayList<>();
         try (PreparedStatement pstm = conn.prepareStmt(sql.buildSelectStmt().concat(sql.buildWhereStmt(filter)))) {
             try (ResultSet rs = pstm.executeQuery()) {
@@ -120,11 +120,11 @@ public class GenericDAO<B> implements DataAccessObject<B> {
      * @throws DBException
      */
     @Override
-    public B selectOne(Filter filter) throws DBException {
+    public B findOne(Filter filter) throws DBException {
         // Adds a LIMIT clause to the filter
         Filter newFilter = new GenericFilter(filter);
         newFilter.addLimit(1);
-        List<B> list = select(newFilter);
+        List<B> list = findAll(newFilter);
         // If no record fits the filter, returns null
         if (list.isEmpty()) {
             return null;

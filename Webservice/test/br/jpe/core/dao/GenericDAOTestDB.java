@@ -6,9 +6,9 @@
 package br.jpe.core.dao;
 
 import br.jpe.core.dao.testing.TestBean;
-import br.jpe.core.database.connection.Connection;
-import br.jpe.core.database.ConnectionFactory;
+import br.jpe.core.database.sql.ConnectionFactory;
 import br.jpe.core.database.DBException;
+import br.jpe.core.database.sql.connection.SQLConnection;
 import java.util.List;
 import static org.junit.Assert.*;
 
@@ -27,11 +27,11 @@ public class GenericDAOTestDB {
     @org.junit.Test
     public void testSelect() throws DBException {
         TestBean bean = new TestBean(1, "foo");
-        try (Connection conn = ConnectionFactory.transaction()) {
+        try (SQLConnection conn = ConnectionFactory.transaction()) {
             GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
             dao.insert(bean);
 
-            List<TestBean> list = dao.select();
+            List<TestBean> list = dao.findAll();
             list.forEach((t) -> assertNotNull(t));
             assertTrue(list.contains(bean));
         }
@@ -44,7 +44,7 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testSelectWithFilters() throws DBException {
-        try (Connection conn = ConnectionFactory.transaction()) {
+        try (SQLConnection conn = ConnectionFactory.transaction()) {
             GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
             // Inserts some dummy temporary data (it will rollback after)
             dao.insert(new TestBean(11, "foo"));
@@ -57,7 +57,7 @@ public class GenericDAOTestDB {
             filter.addOperator(FilterOperator.OR);
             filter.add("keyy", FilterCondition.EQUAL, "13");
             // OR filter asserts
-            List<TestBean> list = dao.select(filter);
+            List<TestBean> list = dao.findAll(filter);
             assertEquals(2, list.size());
             assertNotNull(list.stream().filter((e) -> e.keyy == 11).findAny().get());
             assertNotNull(list.stream().filter((e) -> e.keyy == 13).findAny().get());
@@ -68,7 +68,7 @@ public class GenericDAOTestDB {
             filter.addOperator(FilterOperator.AND);
             filter.add("valuee", FilterCondition.EQUAL, "bar");
             // AND filter asserts
-            list = dao.select(filter);
+            list = dao.findAll(filter);
             assertEquals(1, list.size());
             assertNotNull(list.stream().filter((e) -> e.keyy == 12 && e.valuee.equals("bar")).findAny().get());
 
@@ -83,7 +83,7 @@ public class GenericDAOTestDB {
             filter.add("keyy", FilterCondition.EQUAL, "13");
 
             // Expression filter asserts
-            list = dao.select(filter);
+            list = dao.findAll(filter);
             assertEquals(2, list.size());
             assertNotNull(list.stream().filter((e) -> e.keyy == 12 && e.valuee.equals("bar")).findAny().get());
             assertNotNull(list.stream().filter((e) -> e.keyy == 13).findAny().get());
@@ -98,7 +98,7 @@ public class GenericDAOTestDB {
     @org.junit.Test
     public void testInsert() throws DBException {
         TestBean obj = new TestBean();
-        try (Connection cn = ConnectionFactory.transaction()) {
+        try (SQLConnection cn = ConnectionFactory.transaction()) {
             obj.setKeyy(0);
             obj.setValuee("useless name here");
             new GenericDAO<>(cn, TestBean.class).insert(obj);
@@ -114,7 +114,7 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testUpdate() throws DBException {
-        try (Connection conn = ConnectionFactory.transaction()) {
+        try (SQLConnection conn = ConnectionFactory.transaction()) {
             GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
 
             final int code = 39;
@@ -134,7 +134,7 @@ public class GenericDAOTestDB {
             filter.add("keyy", FilterCondition.EQUAL, code);
 
             // Asserts it will return an object equal
-            TestBean get = dao.selectOne(filter);
+            TestBean get = dao.findOne(filter);
             assertEquals(code, get.keyy);
             assertEquals("new Name", get.valuee);
         }
@@ -147,7 +147,7 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testUpdateAll() throws DBException {
-        try (Connection conn = ConnectionFactory.transaction()) {
+        try (SQLConnection conn = ConnectionFactory.transaction()) {
             GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
 
             dao.insert(new TestBean(3, "haha"));
@@ -162,7 +162,7 @@ public class GenericDAOTestDB {
             dao.updateAll(new TestBean(4, "new Name"), filter);
 
             // Asserts it will return an object equal
-            List<TestBean> list = dao.select(filter);
+            List<TestBean> list = dao.findAll(filter);
             assertEquals(2, list.size());
             assertEquals(3, list.get(0).keyy);
             assertEquals(5, list.get(1).keyy);
@@ -177,13 +177,13 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testDelete() throws DBException {
-        try (Connection conn = ConnectionFactory.transaction()) {
+        try (SQLConnection conn = ConnectionFactory.transaction()) {
             TestBean obj = new TestBean();
             obj.keyy = 1;
             GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
             dao.delete(obj);
             // Asserts it will return an object equal
-            List<TestBean> list = dao.select();
+            List<TestBean> list = dao.findAll();
             assertFalse(list.contains(obj));
         }
     }
@@ -195,7 +195,7 @@ public class GenericDAOTestDB {
      */
     @org.junit.Test
     public void testDeleteAll() throws DBException {
-        try (Connection conn = ConnectionFactory.transaction()) {
+        try (SQLConnection conn = ConnectionFactory.transaction()) {
             GenericDAO<TestBean> dao = new GenericDAO<>(conn, TestBean.class);
             // Cleans up the database
             dao.deleteAll();
@@ -216,7 +216,7 @@ public class GenericDAOTestDB {
             dao.deleteAll(filter);  // TODO: VERIFYY THAT
 
             // Asserts it will return an object equal
-            List<TestBean> list = dao.select();
+            List<TestBean> list = dao.findAll();
             assertEquals(1, list.size());
             assertEquals(4, list.get(0).keyy);
             assertTrue(list.get(0).equals(bean2));

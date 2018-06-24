@@ -3,14 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core.database.connection;
+package br.jpe.core.database.sql.connection;
 
 /**
  * A class to represent a connection from the pool
  *
  * @author joaovperin
  */
-public interface PoolConnection extends Connection {
+public interface PoolConnection extends SQLConnection {
 
     /**
      * Returns true if the connection is free to be used

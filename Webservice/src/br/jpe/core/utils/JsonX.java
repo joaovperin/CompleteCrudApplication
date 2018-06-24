@@ -24,6 +24,10 @@ public class JsonX {
     /** Gson Instance */
     private static final Gson gson;
 
+    private JsonX() {
+        throw new UnsupportedOperationException("Not instantiable.");
+    }
+
     static {
         gson = GsonFactory.gson();
     }
@@ -36,7 +40,7 @@ public class JsonX {
      * @param clazz Class object to cast
      * @return B Class instance
      */
-    public <B> B castTo(String json, Class<B> clazz) {
+    public static <B> B castTo(String json, Class<B> clazz) {
         return gson.fromJson(json, clazz);
     }
 
@@ -46,7 +50,7 @@ public class JsonX {
      * @param obj
      * @return String
      */
-    public String toJson(Object obj) {
+    public static String toJson(Object obj) {
         return gson.toJson(obj);
     }
 
@@ -56,7 +60,7 @@ public class JsonX {
      * @param obj
      * @return String
      */
-    public String toFormattedJson(Object obj) {
+    public static String toFormattedJson(Object obj) {
         return gson.newBuilder().
                 setPrettyPrinting().create().
                 toJson(obj);

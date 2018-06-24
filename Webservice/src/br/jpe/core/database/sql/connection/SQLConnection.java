@@ -3,18 +3,19 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core.database.connection;
+package br.jpe.core.database.sql.connection;
 
+import br.jpe.core.database.Connection;
 import br.jpe.core.database.DBException;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 
 /**
- * An interface for Connections
+ * SQL Connection interface
  *
  * @author joaovperin
  */
-public interface Connection extends AutoCloseable {
+public interface SQLConnection extends Connection {
 
     /**
      * Creates a new SQL Statement
@@ -32,27 +33,5 @@ public interface Connection extends AutoCloseable {
      * @throws DBException
      */
     public PreparedStatement prepareStmt(String sql) throws DBException;
-
-    /**
-     * Commit the connection
-     *
-     * @throws DBException
-     */
-    public void commit() throws DBException;
-
-    /**
-     * Rollbacks the connection
-     *
-     * @throws DBException
-     */
-    public void rollback() throws DBException;
-
-    /**
-     * Closes the connection
-     *
-     * @throws DBException
-     */
-    @Override
-    public void close() throws DBException;
 
 }

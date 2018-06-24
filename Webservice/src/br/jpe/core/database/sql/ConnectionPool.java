@@ -3,9 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core.database;
+package br.jpe.core.database.sql;
 
-import br.jpe.core.database.connection.PoolConnection;
+import br.jpe.core.database.DBException;
+import br.jpe.core.database.sql.connection.PoolConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +50,7 @@ public final class ConnectionPool {
      * Returns a connection of the pool
      *
      * @return ConexaoPool
-     * @throws br.jpe.core.database.DBException An error occurred
+     * @throws br.jpe.core.database.sql.DBException An error occurred
      * @throws EmptyPoolException The pool is empty and you need to provide connections for that
      */
     public PoolConnection getConnection() throws EmptyPoolException, DBException {

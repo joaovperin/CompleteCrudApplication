@@ -6,7 +6,7 @@
 package br.jpe.core.dao;
 
 import br.jpe.core.database.DBException;
-import br.jpe.core.database.connection.Connection;
+import br.jpe.core.database.sql.connection.SQLConnection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -23,7 +23,7 @@ public class DBUtils {
      * @param conn
      * @throws DBException
      */
-    public static final void createTestDB(Connection conn) throws DBException {
+    public static final void createTestDB(SQLConnection conn) throws DBException {
         // Create table
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE TABLE IF NOT EXISTS TestBean (");
@@ -43,7 +43,7 @@ public class DBUtils {
      * @param conn
      * @throws DBException
      */
-    public static final void deleteTestDB(Connection conn) throws DBException {
+    public static final void deleteTestDB(SQLConnection conn) throws DBException {
         try (Statement stm = conn.createStmt()) {
             stm.executeUpdate("DROP TABLE IF EXISTS TestBean");
         } catch (SQLException e) {

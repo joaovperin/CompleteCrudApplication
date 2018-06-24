@@ -5,6 +5,7 @@
  */
 package br.jpe.core.server.impl;
 
+import br.jpe.core.dao.DAOFactory;
 import br.jpe.core.server.AbstractServer;
 import br.jpe.core.utils.FileX;
 import java.io.File;
@@ -78,6 +79,8 @@ public class TomcatServer extends AbstractServer {
             WebResourceRoot resources = new StandardRoot(ctx);
             resources.addPreResources(new DirResourceSet(resources, CLASSES, ADD_INFO.getAbsolutePath(), "/"));
             ctx.setResources(resources);
+            // Configures the DAO Factory
+            DAOFactory.configure(getOptions());
         } catch (ServletException e) {
             e.printStackTrace(System.out);
         }

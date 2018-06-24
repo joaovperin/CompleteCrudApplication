@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core.database;
+package br.jpe.core.database.sql;
 
 /**
  * A exception threw by the poll when you need to create a connection

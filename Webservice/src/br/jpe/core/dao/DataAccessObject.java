@@ -22,7 +22,7 @@ public interface DataAccessObject<B> {
      * @return List
      * @throws DBException
      */
-    public List<B> select() throws DBException;
+    public List<B> findAll() throws DBException;
 
     /**
      * Executes a SELECT statement on the database and returns a list of beans
@@ -32,7 +32,7 @@ public interface DataAccessObject<B> {
      * @return List
      * @throws DBException
      */
-    public List<B> select(Filter filter) throws DBException;
+    public List<B> findAll(Filter filter) throws DBException;
 
     /**
      * Executes a SELECT statement on the database and returns the first bean
@@ -42,7 +42,7 @@ public interface DataAccessObject<B> {
      * @return List
      * @throws DBException
      */
-    public B selectOne(Filter filter) throws DBException;
+    public B findOne(Filter filter) throws DBException;
 
     /**
      * INSERT a register on the database and returns true if it works

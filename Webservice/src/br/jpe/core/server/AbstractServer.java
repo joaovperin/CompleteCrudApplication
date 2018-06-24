@@ -33,4 +33,14 @@ public abstract class AbstractServer implements Server {
         this.options = options;
     }
 
+    /**
+     * Returns the server options
+     *
+     * @return
+     */
+    @Override
+    public ServerOptions getOptions() {
+        return options.copy();
+    }
+
 }

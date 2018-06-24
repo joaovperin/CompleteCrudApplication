@@ -20,6 +20,13 @@ public interface Server {
     public void setOptions(ServerOptions options);
 
     /**
+     * Returns the server options
+     *
+     * @return ServerOptions
+     */
+    public ServerOptions getOptions();
+
+    /**
      * Users the stored options (or the defaults) to configure the server
      */
     public void configure();

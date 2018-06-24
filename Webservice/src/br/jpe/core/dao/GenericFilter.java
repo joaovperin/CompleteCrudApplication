@@ -120,6 +120,7 @@ public class GenericFilter implements Filter {
      *
      * @param recordsCount
      */
+    @Override
     public void addLimit(long recordsCount) {
         list.add(new FilterItem(LIMIT_CLAUSE.concat(String.valueOf(recordsCount))));
     }

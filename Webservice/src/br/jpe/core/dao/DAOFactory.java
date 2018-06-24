@@ -5,7 +5,9 @@
  */
 package br.jpe.core.dao;
 
-import br.jpe.core.database.connection.Connection;
+import br.jpe.core.database.Connection;
+import br.jpe.core.database.sql.connection.SQLConnection;
+import br.jpe.core.server.ServerOptions;
 
 /**
  * A Factory utility to create DAO Objects
@@ -26,13 +28,22 @@ public final class DAOFactory {
      * @return DataAccessObject
      */
     public static final <B> DataAccessObject<B> create(Class<B> bean, Connection conn) {
+        SQLConnection sqlConn = (SQLConnection) conn;
         try {
             String pkgName = DAOFactory.class.getPackage().getName();
             Class<B> daoClass = (Class<B>) Class.forName(pkgName.concat(bean.getSimpleName()).concat(SUFFIX));
-            return (DataAccessObject<B>) daoClass.getConstructor(Connection.class).newInstance(conn);
+            return (DataAccessObject<B>) daoClass.getConstructor(SQLConnection.class).newInstance(sqlConn);
         } catch (IllegalArgumentException | SecurityException | ReflectiveOperationException e) {
-            return new GenericDAO<>(conn, bean);
+            return new GenericDAO<>(sqlConn, bean);
         }
+    }
+
+    /**
+     * Configures the DAOFactory
+     *
+     * @param options
+     */
+    public static final void configure(ServerOptions options) {
     }
 
 }

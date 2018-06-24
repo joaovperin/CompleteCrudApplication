@@ -3,11 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.jpe.core.database;
+package br.jpe.core.database.sql;
 
-import br.jpe.core.database.connection.Connection;
-import br.jpe.core.database.connection.DBConnection;
-import br.jpe.core.database.connection.PoolConnection;
+import br.jpe.core.database.DBException;
+import br.jpe.core.database.Connection;
+import br.jpe.core.database.sql.connection.DBConnection;
+import br.jpe.core.database.sql.connection.PoolConnection;
+import br.jpe.core.database.sql.connection.SQLConnection;
 import com.mysql.jdbc.AbandonedConnectionCleanupThread;
 import java.io.IOException;
 import java.sql.Driver;
@@ -49,9 +51,9 @@ public final class ConnectionFactory {
      * Returns a ReadOnly Connection
      *
      * @return Connection
-     * @throws br.jpe.core.database.DBException
+     * @throws br.jpe.core.database.sql.DBException
      */
-    public static Connection query() throws DBException {
+    public static SQLConnection query() throws DBException {
         PoolConnection conn = null;
         ConnectionPool pool = ConnectionPool.get();
         try {
@@ -74,9 +76,9 @@ public final class ConnectionFactory {
      * Returns a Transaction Connection
      *
      * @return Connection
-     * @throws br.jpe.core.database.DBException
+     * @throws br.jpe.core.database.sql.DBException
      */
-    public static Connection transaction() throws DBException {
+    public static SQLConnection transaction() throws DBException {
         java.sql.Connection conn = null;
         try {
             conn = getJdbcConn();

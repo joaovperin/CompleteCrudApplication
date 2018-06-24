@@ -6,9 +6,9 @@
 package br.jpe.core.dao;
 
 import br.jpe.core.dao.testing.TestBean;
-import br.jpe.core.database.connection.Connection;
-import br.jpe.core.database.ConnectionFactory;
+import br.jpe.core.database.sql.ConnectionFactory;
 import br.jpe.core.database.DBException;
+import br.jpe.core.database.sql.connection.SQLConnection;
 import java.util.List;
 import static org.junit.Assert.*;
 
@@ -28,13 +28,13 @@ public class GenericDAOTransactionsTestDB {
     public void testCommitOnSeparateConnections() throws DBException {
         TestBean bean = new TestBean(58, "foo");
         // Includes a register
-        try (Connection conn = ConnectionFactory.transaction()) {
+        try (SQLConnection conn = ConnectionFactory.transaction()) {
             new GenericDAO<>(conn, TestBean.class).insert(bean);
             conn.commit();
         }
         // Tests select
-        try (Connection conn = ConnectionFactory.query()) {
-            List<TestBean> list = new GenericDAO<TestBean>(conn, TestBean.class).select();
+        try (SQLConnection conn = ConnectionFactory.query()) {
+            List<TestBean> list = new GenericDAO<>(conn, TestBean.class).findAll();
             assertTrue(list.contains(bean));
             list.forEach((t) -> assertNotNull(t));
         }
